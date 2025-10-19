@@ -9,12 +9,6 @@
 
 Tài liệu này nhằm mục đích phân tích và định nghĩa các trường hợp sử dụng (usecase) của hệ thống "Watchify — Website giới thiệu và bán đồng hồ trực tuyến". Mục tiêu là cung cấp một cái nhìn tổng quan, chi tiết về các chức năng mà hệ thống sẽ cung cấp cho các đối tượng người dùng khác nhau.
 
-Tài liệu này sẽ là cơ sở để:
-
-  - Đội ngũ phát triển (Development Team) hiểu rõ các yêu cầu chức năng.
-  - Đội ngũ thiết kế (UI/UX Team) xây dựng giao diện và trải nghiệm người dùng phù hợp.
-  - Đội ngũ kiểm thử (QA/QC Team) xây dựng các kịch bản kiểm thử (test cases).
-
 ### **1.2. Tổng quan dự án**
 
 Dự án "Watchify" hướng đến xây dựng một nền tảng thương mại điện tử chuyên nghiệp, thẩm mỹ và dễ sử dụng, tập trung vào việc giới thiệu và kinh doanh đồng hồ cao cấp và phổ thông. Hệ thống không chỉ là một kênh bán hàng mà còn là một kênh xây dựng thương hiệu, cung cấp thông tin chuyên sâu về sản phẩm và tối ưu hóa trải nghiệm mua sắm từ đầu đến cuối cho khách hàng.

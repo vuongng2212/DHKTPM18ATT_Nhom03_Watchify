@@ -1,7 +1,3 @@
-Chắc chắn rồi. Dưới đây là toàn bộ nội dung file tài liệu `README.md` của bạn từ đầu đến cuối, đã được cập nhật với những thay đổi và cải tiến mà chúng ta đã thực hiện.
-
------
-
 # **Tài liệu Phân tích Usecase - Dự án Watchify**
 
   - **Ngày tạo:** 19/10/2025

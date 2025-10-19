@@ -114,7 +114,7 @@ Sơ đồ dưới đây minh họa mối quan hệ giữa các tác nhân và c�
 Bạn có thể sao chép đoạn mã dưới đây và dán vào một công cụ hỗ trợ PlantUML (như trang web PlantText, hoặc extension trong VSCode) để tạo sơ đồ. Script này đã được cập nhật để phản ánh chính xác nhất các luồng nghiệp vụ.
 
 ```plantuml
-@startuml Watchify_UseCase_Diagram_Final
+@startuml Watchify_UseCase_Diagram_Final_Revised
 left to right direction
 skinparam actorStyle awesome
 skinparam backgroundColor #F5F5F5
@@ -165,12 +165,7 @@ rectangle "Hệ thống Watchify" {
     usecase "UC19: Quản Lý Sản Phẩm" as UC_ManageProducts
     usecase "UC20: Quản Lý Tồn Kho" as UC_ManageInventory
     usecase "UC21: Quản Lý Đơn Hàng" as UC_ManageOrders
-    usecase "UC22: Quản Lý Khách Hàng" as UC_ManageCustomers
-    usecase "UC23: Quản Lý Chương Trình KM" as UC_ManagePromotions
-    usecase "UC24: Quản Lý Nội Dung" as UC_ManageContent
-    usecase "UC25: Xem Báo Cáo & Thống Kê" as UC_ViewReports
-    usecase "UC26: Quản Lý Phân Quyền" as UC_ManagePermissions
-    usecase "UC27: Xem Nhật Ký Hệ Thống" as UC_ViewAuditLog
+    ' ... các use case khác của Admin
   }
 
   ' ===================== USE CASE HỖ TRỢ ====================
@@ -203,7 +198,9 @@ Customer --> UC_PostSaleSupport
 
 Admin --> UC_AdminLogin
 Admin --> UC_ManageProducts
-' ... Các liên kết khác của Admin
+Admin --> UC_ManageInventory
+Admin --> UC_ManageOrders
+
 
 ' ==================== MỐI QUAN HỆ GIỮA CÁC USE CASE ====================
 ' Đặt hàng bao gồm các bước bắt buộc

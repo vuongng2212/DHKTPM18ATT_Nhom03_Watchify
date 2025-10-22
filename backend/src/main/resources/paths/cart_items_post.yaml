@@ -1,0 +1,45 @@
+post:
+  tags:
+    - Carts
+  summary: Thêm sản phẩm vào giỏ hàng
+  description: Thêm một sản phẩm mới hoặc cập nhật số lượng nếu sản phẩm đã có trong giỏ.
+  operationId: addItemToCart
+  security:
+    - BearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - product_id
+            - quantity
+          properties:
+            product_id:
+              type: string
+              format: uuid
+              description: ID của sản phẩm cần thêm.
+            quantity:
+              type: integer
+              description: Số lượng sản phẩm.
+              default: 1
+  responses:
+    '200':
+      description: Sản phẩm được thêm/cập nhật thành công, trả về giỏ hàng mới.
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/Cart.yaml'
+    '400':
+      description: Dữ liệu không hợp lệ (ví dụ: sản phẩm không tồn tại, số lượng không hợp lệ).
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/ErrorResponse.yaml'
+    '401':
+      description: Unauthorized.
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/ErrorResponse.yaml'

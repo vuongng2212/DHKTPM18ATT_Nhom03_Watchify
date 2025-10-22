@@ -1,0 +1,24 @@
+get:
+  tags:
+    - Carts
+  summary: Lấy thông tin giỏ hàng hiện tại
+  description: |-
+    Trả về thông tin chi tiết về giỏ hàng của người dùng hiện tại.
+    Nếu người dùng chưa đăng nhập, hệ thống sẽ dựa vào session.
+    Nếu đã đăng nhập, hệ thống sẽ dựa vào user ID.
+  operationId: getCurrentCart
+  security:
+    - BearerAuth: []
+  responses:
+    '200':
+      description: Thông tin chi tiết giỏ hàng.
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/Cart.yaml'
+    '401':
+      description: Unauthorized - Yêu cầu token xác thực.
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/ErrorResponse.yaml'

@@ -1,0 +1,75 @@
+get:
+  tags:
+    - Orders
+  summary: Lấy lịch sử đơn hàng của người dùng
+  description: Trả về danh sách các đơn hàng đã đặt của người dùng đã đăng nhập.
+  operationId: getOrderHistory
+  security:
+    - BearerAuth: []
+  responses:
+    '200':
+      description: Một danh sách các đơn hàng.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '../components/schemas/Order.yaml'
+    '401':
+      description: Unauthorized.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+
+post:
+  tags:
+    - Orders
+  summary: Tạo một đơn hàng mới (Checkout)
+  description: Tạo một đơn hàng mới từ giỏ hàng hiện tại của người dùng.
+  operationId: createOrder
+  security:
+    - BearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - address_id
+            - payment_method
+          properties:
+            address_id:
+              type: string
+              format: uuid
+              description: ID của địa chỉ giao hàng đã được lưu.
+            payment_method:
+              type: string
+              enum: [credit_card, bank_transfer, ewallet, cod]
+              description: Phương thức thanh toán.
+            coupon_code:
+              type: string
+              description: (Tùy chọn) Mã giảm giá muốn áp dụng.
+            notes:
+              type: string
+              description: (Tùy chọn) Ghi chú cho đơn hàng.
+  responses:
+    '201':
+      description: Đơn hàng đã được tạo thành công.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/Order.yaml'
+    '400':
+      description: Dữ liệu không hợp lệ (ví dụ: giỏ hàng trống, địa chỉ không hợp lệ).
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'
+    '401':
+      description: Unauthorized.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'

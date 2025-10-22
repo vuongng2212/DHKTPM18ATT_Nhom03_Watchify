@@ -1,0 +1,57 @@
+get:
+  tags:
+    - Auth
+  summary: Lấy thông tin người dùng hiện tại
+  description: Trả về thông tin chi tiết của người dùng đã đăng nhập.
+  operationId: getCurrentUser
+  security:
+    - BearerAuth: []
+  responses:
+    '200':
+      description: Thông tin chi tiết người dùng.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/User.yaml'
+    '401':
+      description: Unauthorized.
+
+put:
+  tags:
+    - Auth
+  summary: Cập nhật thông tin người dùng hiện tại
+  description: Cho phép người dùng đã đăng nhập cập nhật thông tin cá nhân của họ.
+  operationId: updateCurrentUser
+  security:
+    - BearerAuth: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            first_name:
+              type: string
+              example: "John"
+            last_name:
+              type: string
+              example: "Doe"
+            phone:
+              type: string
+              example: "0987654321"
+            avatar_url:
+              type: string
+              format: uri
+              example: "https://example.com/new-avatar.jpg"
+  responses:
+    '200':
+      description: Cập nhật thành công.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/User.yaml'
+    '400':
+      description: Dữ liệu không hợp lệ.
+    '401':
+      description: Unauthorized.

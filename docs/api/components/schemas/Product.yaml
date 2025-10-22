@@ -1,0 +1,53 @@
+type: object
+properties:
+  product_id:
+    type: string
+    format: uuid
+    description: ID định danh duy nhất của sản phẩm.
+    example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+  product_name:
+    type: string
+    description: Tên sản phẩm.
+    example: "Đồng hồ Classic 40mm"
+  product_code:
+    type: string
+    description: Mã sản phẩm duy nhất.
+    example: "CL40-BLK"
+  description:
+    type: string
+    description: Mô tả chi tiết về sản phẩm.
+  price:
+    type: number
+    format: double
+    description: Giá bán của sản phẩm.
+    example: 499.99
+  status:
+    type: string
+    enum: [active, inactive, discontinued]
+    description: Trạng thái kinh doanh của sản phẩm.
+  category:
+    type: object
+    properties:
+      category_id:
+        type: string
+        format: uuid
+      category_name:
+        type: string
+  brand:
+    type: object
+    properties:
+      brand_id:
+        type: string
+        format: uuid
+      brand_name:
+        type: string
+  images:
+    type: array
+    items:
+      type: object
+      properties:
+        image_url:
+          type: string
+          format: uri
+        is_primary:
+          type: boolean

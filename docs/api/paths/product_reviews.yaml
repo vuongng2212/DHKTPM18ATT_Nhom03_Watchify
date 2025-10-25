@@ -1,0 +1,55 @@
+post:
+  tags:
+    - Products
+  summary: Gửi một đánh giá cho sản phẩm
+  description: |-
+    Cho phép người dùng đã đăng nhập và đã mua sản phẩm gửi một đánh giá (rating và bình luận).
+  operationId: submitReview
+  security:
+    - BearerAuth: []
+  parameters:
+    - name: productId
+      in: path
+      description: ID của sản phẩm cần đánh giá.
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - rating
+          properties:
+            rating:
+              type: integer
+              description: Điểm đánh giá từ 1 đến 5.
+              minimum: 1
+              maximum: 5
+              example: 5
+            content:
+              type: string
+              description: (Tùy chọn) Nội dung bình luận chi tiết.
+              example: "Sản phẩm rất tuyệt vời!"
+  responses:
+    '201':
+      description: Đánh giá đã được gửi thành công và đang chờ duyệt.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "Cảm ơn bạn đã gửi đánh giá. Đánh giá của bạn đang chờ được duyệt."
+    '400':
+      description: Dữ liệu không hợp lệ (ví dụ: rating ngoài khoảng 1-5).
+    '401':
+      description: Unauthorized - Chưa đăng nhập.
+    '403':
+      description: Forbidden - Người dùng chưa mua sản phẩm này nên không có quyền đánh giá.
+    '404':
+      description: Không tìm thấy sản phẩm.

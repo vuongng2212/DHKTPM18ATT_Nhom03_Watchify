@@ -230,7 +230,9 @@ UC_UpdateShippingStatus <-- ShippingService
 @enduml
 ```
 
+
 <img width="851" height="2371" alt="bLXjRzn44FuUAVzX52GA7vBIq0ADqgWN9xb4IQvfxBpqKxJnRSwh-EMmrmadg4If15AhYbH8eC87UerAQTH09K28ioWV7FL_-9ymkxRl_7PzkKXtbvsTsPsPPsOUtrMF4vVxbWbRXEi6s-liR7XK8HxTcMEavH9hPu7PnDnPfmVCeytH4PFkSU0EkAnbS6Wob-gSEVReYBVFx3P1" src="https://github.com/user-attachments/assets/fae1709a-9014-4824-909c-48f80bc863cb" />
+
 
 ## **6. Kết luận**
 

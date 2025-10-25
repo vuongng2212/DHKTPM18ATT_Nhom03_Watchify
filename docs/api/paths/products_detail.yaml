@@ -1,0 +1,57 @@
+get:
+  tags:
+    - Products
+  summary: Lấy chi tiết một sản phẩm
+  description: Trả về thông tin chi tiết của một sản phẩm dựa trên ID.
+  operationId: getProductDetail
+  parameters:
+    - name: productId
+      in: path
+      description: ID của sản phẩm cần lấy thông tin.
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: Thông tin chi tiết sản phẩm.
+      content:
+        application/json:
+          schema:
+            # Thông tin trả về sẽ chi tiết hơn schema Product cơ bản
+            # Nó sẽ bao gồm cả ProductDetail và Reviews
+            allOf:
+              - $ref: '../components/schemas/Product.yaml'
+              - type: object
+                properties:
+                  details:
+                    type: object
+                    properties:
+                      movement_type:
+                        type: string
+                      case_material:
+                        type: string
+                      case_size:
+                        type: string
+                      water_resistance:
+                        type: string
+                  reviews:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user_name:
+                          type: string
+                        rating:
+                          type: integer
+                        content:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+    '404':
+      description: Không tìm thấy sản phẩm.
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'

@@ -1,0 +1,831 @@
+openapi: 3.0.3
+info:
+  title: Watchify API
+  description: |-
+    Tài liệu API chính thức cho dự án Watchify.
+
+    Đây là tài liệu đặc tả các endpoint được cung cấp bởi backend Spring Boot,
+    giúp đội ngũ frontend và các bên liên quan có thể hiểu và tích hợp một cách dễ dàng.
+  contact:
+    email: admin@watchify.com
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+
+tags:
+  - name: Auth
+    description: Các API liên quan đến xác thực và quản lý tài khoản
+  - name: Products
+    description: Các API công khai để truy vấn sản phẩm và danh mục
+  - name: Carts
+    description: Các API quản lý giỏ hàng
+  - name: Orders
+    description: Các API quản lý đơn hàng của khách hàng
+  - name: Admin/Products
+    description: (Admin) Các API quản lý sản phẩm
+  - name: Admin/Orders
+    description: (Admin) Các API quản lý đơn hàng
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Đăng ký tài khoản mới
+      description: Cho phép người dùng mới tạo một tài khoản bằng email và mật khẩu.
+      operationId: registerUser
+      requestBody:
+        description: Thông tin cần thiết để đăng ký tài khoản.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - first_name
+                - last_name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "newuser@example.com"
+                password:
+                  type: string
+                  format: password
+                  description: Mật khẩu phải có ít nhất 8 ký tự.
+                  example: "password123"
+                first_name:
+                  type: string
+                  example: "New"
+                last_name:
+                  type: string
+                  example: "User"
+      responses:
+        '201':
+          description: Tài khoản được tạo thành công.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: 'Dữ liệu không hợp lệ (ví dụ: email đã tồn tại, mật khẩu yếu).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Đăng nhập vào hệ thống
+      description: Xác thực người dùng bằng email và mật khẩu, trả về một cặp Access Token và Refresh Token.
+      operationId: loginUser
+      requestBody:
+        description: Thông tin đăng nhập.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "password123"
+      responses:
+        '200':
+          description: Đăng nhập thành công.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: Token dùng để xác thực các yêu cầu API, có thời hạn ngắn.
+                  refresh_token:
+                    type: string
+                    description: Token dùng để yêu cầu cấp lại access_token mới, có thời hạn dài.
+        '401':
+          description: 'Unauthorized - Sai email hoặc mật khẩu.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/me:
+    get:
+      tags:
+        - Auth
+      summary: Lấy thông tin người dùng hiện tại
+      description: Trả về thông tin chi tiết của người dùng đã đăng nhập.
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Thông tin chi tiết người dùng.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized.
+
+    put:
+      tags:
+        - Auth
+      summary: Cập nhật thông tin người dùng hiện tại
+      description: Cho phép người dùng đã đăng nhập cập nhật thông tin cá nhân của họ.
+      operationId: updateCurrentUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                  example: "John"
+                last_name:
+                  type: string
+                  example: "Doe"
+                phone:
+                  type: string
+                  example: "0987654321"
+                avatar_url:
+                  type: string
+                  format: uri
+                  example: "https://example.com/new-avatar.jpg"
+      responses:
+        '200':
+          description: Cập nhật thành công.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Dữ liệu không hợp lệ.
+        '401':
+          description: Unauthorized.
+
+  /products:
+    get:
+      tags:
+        - Products
+      summary: Lấy danh sách sản phẩm
+      description: |-
+        API công khai để lấy danh sách sản phẩm, hỗ trợ phân trang, lọc và sắp xếp.
+        Tất cả các tham số query đều là tùy chọn.
+      operationId: listProducts
+      parameters:
+        - name: page
+          in: query
+          description: Số trang (bắt đầu từ 0).
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          description: Số lượng sản phẩm trên mỗi trang.
+          schema:
+            type: integer
+            default: 20
+        - name: sort
+          in: query
+          description: |-
+            Tiêu chí sắp xếp.
+            Cú pháp: `fieldName,(asc|desc)`.
+            Ví dụ: `price,asc` để sắp xếp theo giá tăng dần.
+          schema:
+            type: string
+            example: "price,desc"
+        - name: categoryId
+          in: query
+          description: Lọc sản phẩm theo ID danh mục.
+          schema:
+            type: string
+            format: uuid
+        - name: brandId
+          in: query
+          description: Lọc sản phẩm theo ID thương hiệu.
+          schema:
+            type: string
+            format: uuid
+        - name: minPrice
+          in: query
+          description: Lọc theo giá tối thiểu.
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          description: Lọc theo giá tối đa.
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Trả về một trang (page) các sản phẩm.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  pageable:
+                    type: object
+                    properties:
+                      pageNumber:
+                        type: integer
+                      pageSize:
+                        type: integer
+                  totalPages:
+                    type: integer
+                  totalElements:
+                    type: integer
+
+  /products/{productId}:
+    get:
+      tags:
+        - Products
+      summary: Lấy chi tiết một sản phẩm
+      description: Trả về thông tin chi tiết của một sản phẩm dựa trên ID.
+      operationId: getProductDetail
+      parameters:
+        - name: productId
+          in: path
+          description: ID của sản phẩm cần lấy thông tin.
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Thông tin chi tiết sản phẩm.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Product'
+                  - type: object
+                    properties:
+                      details:
+                        type: object
+                        properties:
+                          movement_type:
+                            type: string
+                          case_material:
+                            type: string
+                          case_size:
+                            type: string
+                          water_resistance:
+                            type: string
+                      reviews:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            user_name:
+                              type: string
+                            rating:
+                              type: integer
+                            content:
+                              type: string
+                            created_at:
+                              type: string
+                              format: date-time
+        '404':
+          description: Không tìm thấy sản phẩm.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /products/{productId}/reviews:
+    post:
+      tags:
+        - Products
+      summary: Gửi một đánh giá cho sản phẩm
+      description: |-
+        Cho phép người dùng đã đăng nhập và đã mua sản phẩm gửi một đánh giá (rating và bình luận).
+      operationId: submitReview
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          description: ID của sản phẩm cần đánh giá.
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - rating
+              properties:
+                rating:
+                  type: integer
+                  description: Điểm đánh giá từ 1 đến 5.
+                  minimum: 1
+                  maximum: 5
+                  example: 5
+                content:
+                  type: string
+                  description: (Tùy chọn) Nội dung bình luận chi tiết.
+                  example: "Sản phẩm rất tuyệt vời!"
+      responses:
+        '201':
+          description: Đánh giá đã được gửi thành công và đang chờ duyệt.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cảm ơn bạn đã gửi đánh giá. Đánh giá của bạn đang chờ được duyệt."
+        '400':
+          description: 'Dữ liệu không hợp lệ (ví dụ: rating ngoài khoảng 1-5).'
+        '401':
+          description: Unauthorized - Chưa đăng nhập.
+        '403':
+          description: 'Forbidden - Người dùng chưa mua sản phẩm này nên không có quyền đánh giá.'
+        '404':
+          description: Không tìm thấy sản phẩm.
+
+  /cart:
+    get:
+      tags:
+        - Carts
+      summary: Lấy thông tin giỏ hàng hiện tại
+      description: |-
+        Trả về thông tin chi tiết về giỏ hàng của người dùng hiện tại.
+        Nếu người dùng chưa đăng nhập, hệ thống sẽ dựa vào session.
+        Nếu đã đăng nhập, hệ thống sẽ dựa vào user ID.
+      operationId: getCurrentCart
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Thông tin chi tiết giỏ hàng.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '401':
+          description: 'Unauthorized - Yêu cầu token xác thực.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cart/items:
+    post:
+      tags:
+        - Carts
+      summary: Thêm sản phẩm vào giỏ hàng
+      description: Thêm một sản phẩm mới hoặc cập nhật số lượng nếu sản phẩm đã có trong giỏ.
+      operationId: addItemToCart
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_id
+                - quantity
+              properties:
+                product_id:
+                  type: string
+                  format: uuid
+                  description: ID của sản phẩm cần thêm.
+                quantity:
+                  type: integer
+                  description: Số lượng sản phẩm.
+                  default: 1
+      responses:
+        '200':
+          description: Sản phẩm được thêm/cập nhật thành công, trả về giỏ hàng mới.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: 'Dữ liệu không hợp lệ (ví dụ: sản phẩm không tồn tại, số lượng không hợp lệ).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cart/items/{productId}:
+    parameters:
+      - name: productId
+        in: path
+        description: ID của sản phẩm trong giỏ hàng cần thao tác.
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    put:
+      tags:
+        - Carts
+      summary: Cập nhật số lượng một sản phẩm trong giỏ hàng
+      operationId: updateCartItem
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  description: Số lượng mới của sản phẩm. Nếu là 0, sản phẩm sẽ bị xóa.
+                  example: 2
+      responses:
+        '200':
+          description: Cập nhật thành công, trả về giỏ hàng mới.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: 'Dữ liệu không hợp lệ.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+        '404':
+          description: Không tìm thấy sản phẩm trong giỏ hàng.
+
+    delete:
+      tags:
+        - Carts
+      summary: Xóa một sản phẩm khỏi giỏ hàng
+      operationId: deleteCartItem
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Xóa thành công, trả về giỏ hàng mới.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '401':
+          description: Unauthorized.
+        '404':
+          description: Không tìm thấy sản phẩm trong giỏ hàng.
+
+  /orders:
+    get:
+      tags:
+        - Orders
+      summary: Lấy lịch sử đơn hàng của người dùng
+      description: Trả về danh sách các đơn hàng đã đặt của người dùng đã đăng nhập.
+      operationId: getOrderHistory
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Một danh sách các đơn hàng.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '401':
+          description: 'Unauthorized.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Orders
+      summary: Tạo một đơn hàng mới (Checkout)
+      description: Tạo một đơn hàng mới từ giỏ hàng hiện tại của người dùng.
+      operationId: createOrder
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - address_id
+                - payment_method
+              properties:
+                address_id:
+                  type: string
+                  format: uuid
+                  description: ID của địa chỉ giao hàng đã được lưu.
+                payment_method:
+                  type: string
+                  enum: [credit_card, bank_transfer, ewallet, cod]
+                  description: Phương thức thanh toán.
+                coupon_code:
+                  type: string
+                  description: (Tùy chọn) Mã giảm giá muốn áp dụng.
+                notes:
+                  type: string
+                  description: (Tùy chọn) Ghi chú cho đơn hàng.
+      responses:
+        '201':
+          description: Đơn hàng đã được tạo thành công.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: 'Dữ liệu không hợp lệ (ví dụ: giỏ hàng trống, địa chỉ không hợp lệ).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /orders/{orderId}:
+    get:
+      tags:
+        - Orders
+      summary: Lấy chi tiết một đơn hàng
+      description: Trả về thông tin chi tiết của một đơn hàng cụ thể dựa trên ID.
+      operationId: getOrderDetail
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          description: ID của đơn hàng cần lấy thông tin.
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Thông tin chi tiết đơn hàng.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          description: 'Unauthorized - Người dùng không có quyền xem đơn hàng này.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Không tìm thấy đơn hàng.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: ID định danh duy nhất của người dùng.
+          example: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+        email:
+          type: string
+          format: email
+          description: Địa chỉ email của người dùng.
+          example: "user@example.com"
+        first_name:
+          type: string
+          description: Tên.
+          example: "John"
+        last_name:
+          type: string
+          description: Họ.
+          example: "Doe"
+        phone:
+          type: string
+          description: Số điện thoại.
+          example: "0987654321"
+        avatar_url:
+          type: string
+          format: uri
+          description: URL đến ảnh đại diện.
+          example: "https://example.com/avatar.jpg"
+        status:
+          type: string
+          enum: [active, inactive, banned]
+          description: Trạng thái tài khoản.
+        created_at:
+          type: string
+          format: date-time
+          description: Thời điểm tài khoản được tạo.
+
+    Product:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          description: ID định danh duy nhất của sản phẩm.
+          example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        product_name:
+          type: string
+          description: Tên sản phẩm.
+          example: "Đồng hồ Classic 40mm"
+        product_code:
+          type: string
+          description: Mã sản phẩm duy nhất.
+          example: "CL40-BLK"
+        description:
+          type: string
+          description: Mô tả chi tiết về sản phẩm.
+        price:
+          type: number
+          format: double
+          description: Giá bán của sản phẩm.
+          example: 499.99
+        status:
+          type: string
+          enum: [active, inactive, discontinued]
+          description: Trạng thái kinh doanh của sản phẩm.
+        category:
+          type: object
+          properties:
+            category_id:
+              type: string
+              format: uuid
+            category_name:
+              type: string
+        brand:
+          type: object
+          properties:
+            brand_id:
+              type: string
+              format: uuid
+            brand_name:
+              type: string
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              image_url:
+                type: string
+                format: uri
+              is_primary:
+                type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Thời gian xảy ra lỗi.
+        status:
+          type: integer
+          description: Mã trạng thái HTTP.
+          example: 400
+        error:
+          type: string
+          description: 'Tên của lỗi HTTP (ví dụ: Bad Request, Not Found).'
+        message:
+          type: string
+          description: Một câu thông báo lỗi thân thiện với người dùng.
+          example: "Email đã tồn tại."
+        path:
+          type: string
+          description: Đường dẫn API đã xảy ra lỗi.
+          example: "/api/v1/auth/register"
+        details:
+          type: object
+          description: (Tùy chọn) Một đối tượng chứa các chi tiết lỗi cụ thể, thường dùng cho lỗi validation.
+          example:
+            email: "Email không đúng định dạng."
+            password: "Mật khẩu phải có ít nhất 8 ký tự."
+
+    Cart:
+      type: object
+      properties:
+        cart_id:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              product:
+                $ref: '#/components/schemas/Product'
+              quantity:
+                type: integer
+                description: Số lượng sản phẩm trong giỏ hàng.
+        total_price:
+          type: number
+          format: double
+          description: Tổng giá trị các sản phẩm trong giỏ hàng.
+
+    Order:
+      type: object
+      properties:
+        order_id:
+          type: string
+          format: uuid
+        order_number:
+          type: string
+          description: Mã đơn hàng duy nhất, thân thiện với người dùng.
+        order_date:
+          type: string
+          format: date-time
+        order_status:
+          type: string
+          enum: [pending, confirmed, processing, shipped, delivered, cancelled]
+        total_amount:
+          type: number
+          format: double
+          description: Tổng số tiền cuối cùng của đơn hàng.
+        shipping_address:
+          type: object
+          properties:
+            recipient_name:
+              type: string
+            phone:
+              type: string
+            street_address:
+              type: string
+            district:
+              type: string
+            city:
+              type: string
+        order_items:
+          type: array
+          items:
+            type: object
+            properties:
+              product:
+                $ref: '#/components/schemas/Product'
+              quantity:
+                type: integer
+              unit_price:
+                type: number
+                format: double
+                description: Giá của sản phẩm tại thời điểm đặt hàng.
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []

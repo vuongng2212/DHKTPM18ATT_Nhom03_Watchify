@@ -5,7 +5,7 @@
 - **Dự án:** Watchify - Website Thương mại điện tử đồng hồ.
 - **Thời gian:** 4 tuần.
 - **Thành viên & Vai trò:**
-  - **Vương (Bạn):** Phụ trách Backend và hỗ trợ Frontend.
+  - **Vương:** Phụ trách Backend và hỗ trợ Frontend.
   - **Anh Tuấn:** Phụ trách Backend.
   - **Hữu Tuấn:** Phụ trách Frontend.
 - **Cơ sở dữ liệu:** MariaDB.

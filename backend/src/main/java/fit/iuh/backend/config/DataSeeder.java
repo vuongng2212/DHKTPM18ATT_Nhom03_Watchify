@@ -7,6 +7,8 @@ import fit.iuh.backend.modules.identity.domain.entity.User;
 import fit.iuh.backend.modules.identity.domain.entity.UserStatus;
 import fit.iuh.backend.modules.identity.domain.repository.RoleRepository;
 import fit.iuh.backend.modules.identity.domain.repository.UserRepository;
+import fit.iuh.backend.modules.inventory.domain.entity.Inventory;
+import fit.iuh.backend.modules.inventory.domain.repository.InventoryRepository;
 import fit.iuh.backend.sharedkernel.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,7 @@ public class DataSeeder {
     private final ProductRepository productRepository;
     private final ProductImageRepository productImageRepository;
     private final ProductDetailRepository productDetailRepository;
+    private final InventoryRepository inventoryRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Bean
@@ -58,6 +61,9 @@ public class DataSeeder {
 
             // 5. Seed Products
             seedProducts();
+
+            // 6. Seed Inventory
+            seedInventories();
 
             log.info("Data seeding completed!");
         };
@@ -296,6 +302,28 @@ public class DataSeeder {
         );
 
         productImageRepository.saveAll(images);
+    }
+
+    private void seedInventories() {
+        if (inventoryRepository.count() == 0) {
+            List<Product> products = productRepository.findAll();
+
+            for (Product product : products) {
+                // Random quantity between 10-100
+                int quantity = 10 + (int) (Math.random() * 90);
+
+                Inventory inventory = Inventory.builder()
+                        .product(product)
+                        .quantity(quantity)
+                        .reservedQuantity(0)
+                        .location("Warehouse A")
+                        .build();
+
+                inventoryRepository.save(inventory);
+            }
+
+            log.info("Seeded inventory for {} products", products.size());
+        }
     }
 
     private void seedProductDetail(UUID productId, String movement, String caseMaterial, String caseDiameter) {

@@ -60,7 +60,9 @@ public class OrderController {
             @Parameter(description = "Order ID") @PathVariable UUID orderId,
             Authentication authentication) {
 
-        UUID userId = UUID.fromString(authentication.getName());
+        String email = authentication.getName();
+        UUID userId = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found")).getId();
         OrderDto order = orderService.getOrderById(orderId, userId);
         return ResponseEntity.ok(order);
     }

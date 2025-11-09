@@ -1,6 +1,8 @@
 package fit.iuh.backend.modules.identity.application.dto;
 
+import fit.iuh.backend.modules.identity.domain.entity.AddressType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,6 +22,9 @@ public class AddressDto {
 
     private UUID id;
 
+    @NotNull(message = "Address type is required")
+    private AddressType type;
+
     @NotBlank(message = "Full name is required")
     @Size(max = 100, message = "Full name must not exceed 100 characters")
     private String fullName;
@@ -28,9 +33,9 @@ public class AddressDto {
     @Size(max = 20, message = "Phone must not exceed 20 characters")
     private String phone;
 
-    @NotBlank(message = "Address is required")
-    @Size(max = 255, message = "Address must not exceed 255 characters")
-    private String address;
+    @NotBlank(message = "Street is required")
+    @Size(max = 255, message = "Street must not exceed 255 characters")
+    private String street;
 
     @Size(max = 100, message = "Ward must not exceed 100 characters")
     private String ward;
@@ -43,6 +48,6 @@ public class AddressDto {
     private String city;
 
     private Boolean isDefault;
-    
+
     private String fullAddress;
 }

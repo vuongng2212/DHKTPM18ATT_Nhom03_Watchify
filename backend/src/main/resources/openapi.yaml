@@ -25,8 +25,8 @@ tags:
     description: Các API quản lý đơn hàng của khách hàng
   - name: Admin/Products
     description: (Admin) Các API quản lý sản phẩm
-  - name: Admin/Orders
-    description: (Admin) Các API quản lý đơn hàng
+  - name: Inventory
+    description: Inventory management APIs
 
 paths:
   /auth/register:
@@ -629,6 +629,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /inventory/product/{productId}:
+    get:
+      tags:
+        - Inventory
+      summary: Get inventory for product
+      description: Get inventory information for a specific product
+      operationId: getInventoryByProductId
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: Product ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Inventory information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inventory'
+        '404':
+          description: Inventory not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     User:
@@ -820,6 +849,50 @@ components:
                 type: number
                 format: double
                 description: Giá của sản phẩm tại thời điểm đặt hàng.
+
+    Inventory:
+      type: object
+      required:
+        - id
+        - productId
+        - quantity
+        - reservedQuantity
+        - availableQuantity
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        productId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        quantity:
+          type: integer
+          description: Total quantity in inventory
+          example: 100
+        reservedQuantity:
+          type: integer
+          description: Quantity reserved for orders
+          example: 5
+        availableQuantity:
+          type: integer
+          description: Available quantity (quantity - reservedQuantity)
+          example: 95
+        location:
+          type: string
+          description: Warehouse location
+          example: "Warehouse A"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2023-01-01T00:00:00Z"
 
   securitySchemes:
     BearerAuth:

@@ -1,0 +1,27 @@
+get:
+  tags:
+    - Inventory
+  summary: Get inventory for product
+  description: Get inventory information for a specific product
+  operationId: getInventoryByProductId
+  parameters:
+    - name: productId
+      in: path
+      required: true
+      description: Product ID
+      schema:
+        type: string
+        format: uuid
+  responses:
+    '200':
+      description: Inventory information
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/Inventory.yaml'
+    '404':
+      description: Inventory not found
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ErrorResponse.yaml'

@@ -4,8 +4,6 @@ import fit.iuh.backend.sharedkernel.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.UUID;
-
 /**
  * Entity representing a user's delivery address.
  */
@@ -18,8 +16,13 @@ import java.util.UUID;
 @Builder
 public class Address extends BaseEntity {
 
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false)
+    private AddressType type;
 
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
@@ -27,8 +30,8 @@ public class Address extends BaseEntity {
     @Column(name = "phone", nullable = false, length = 20)
     private String phone;
 
-    @Column(name = "address", nullable = false, length = 255)
-    private String address;  // Street address
+    @Column(name = "street", nullable = false, length = 255)
+    private String street;  // Street address
 
     @Column(name = "ward", length = 100)
     private String ward;  // Phường/Xã
@@ -39,6 +42,9 @@ public class Address extends BaseEntity {
     @Column(name = "city", nullable = false, length = 100)
     private String city;  // Tỉnh/Thành phố
 
+    @Column(name = "address", nullable = false, length = 500)
+    private String address;  // Full address string
+
     @Column(name = "is_default")
     @Builder.Default
     private Boolean isDefault = false;
@@ -47,8 +53,11 @@ public class Address extends BaseEntity {
      * Get full address as a single string
      */
     public String getFullAddress() {
+        if (address != null && !address.isBlank()) {
+            return address;
+        }
         StringBuilder sb = new StringBuilder();
-        sb.append(address);
+        sb.append(street);
         if (ward != null && !ward.isBlank()) {
             sb.append(", ").append(ward);
         }

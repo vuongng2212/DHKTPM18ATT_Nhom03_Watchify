@@ -2,9 +2,8 @@ package fit.iuh.backend.modules.identity.application.mapper;
 
 import fit.iuh.backend.modules.identity.application.dto.AddressDto;
 import fit.iuh.backend.modules.identity.domain.entity.Address;
+import fit.iuh.backend.modules.identity.domain.entity.User;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 /**
  * Mapper for converting between Address entity and AddressDto.
@@ -22,9 +21,10 @@ public class AddressMapper {
 
         return AddressDto.builder()
                 .id(address.getId())
+                .type(address.getType())
                 .fullName(address.getFullName())
                 .phone(address.getPhone())
-                .address(address.getAddress())
+                .street(address.getStreet())
                 .ward(address.getWard())
                 .district(address.getDistrict())
                 .city(address.getCity())
@@ -36,19 +36,24 @@ public class AddressMapper {
     /**
      * Convert AddressDto to Address entity
      */
-    public Address toEntity(AddressDto dto, UUID userId) {
+    public Address toEntity(AddressDto dto, User user) {
         if (dto == null) {
             return null;
         }
 
         return Address.builder()
-                .userId(userId)
+                .user(user)
+                .type(dto.getType())
                 .fullName(dto.getFullName())
                 .phone(dto.getPhone())
-                .address(dto.getAddress())
+                .street(dto.getStreet())
                 .ward(dto.getWard())
                 .district(dto.getDistrict())
                 .city(dto.getCity())
+                .address(dto.getStreet() + 
+                        (dto.getWard() != null && !dto.getWard().isBlank() ? ", " + dto.getWard() : "") +
+                        (dto.getDistrict() != null && !dto.getDistrict().isBlank() ? ", " + dto.getDistrict() : "") +
+                        ", " + dto.getCity())
                 .isDefault(dto.getIsDefault() != null ? dto.getIsDefault() : false)
                 .build();
     }
@@ -57,12 +62,17 @@ public class AddressMapper {
      * Update Address entity from AddressDto
      */
     public void updateEntityFromDto(AddressDto dto, Address address) {
+        address.setType(dto.getType());
         address.setFullName(dto.getFullName());
         address.setPhone(dto.getPhone());
-        address.setAddress(dto.getAddress());
+        address.setStreet(dto.getStreet());
         address.setWard(dto.getWard());
         address.setDistrict(dto.getDistrict());
         address.setCity(dto.getCity());
+        address.setAddress(dto.getStreet() + 
+                (dto.getWard() != null && !dto.getWard().isBlank() ? ", " + dto.getWard() : "") +
+                (dto.getDistrict() != null && !dto.getDistrict().isBlank() ? ", " + dto.getDistrict() : "") +
+                ", " + dto.getCity());
         if (dto.getIsDefault() != null) {
             address.setIsDefault(dto.getIsDefault());
         }

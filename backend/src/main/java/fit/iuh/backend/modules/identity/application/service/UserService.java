@@ -83,8 +83,7 @@ public class UserService {
      */
     @Transactional
     public AddressDto addAddress(UUID userId, AddressDto addressDto) {
-        // Verify user exists
-        userRepository.findById(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
         // If this is the first address or marked as default, unset other default addresses
@@ -92,7 +91,7 @@ public class UserService {
             unsetDefaultAddresses(userId);
         }
 
-        Address address = addressMapper.toEntity(addressDto, userId);
+        Address address = addressMapper.toEntity(addressDto, user);
         Address savedAddress = addressRepository.save(address);
 
         log.info("Address added for user: {}", userId);
@@ -108,7 +107,7 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "id", addressId));
 
         // Verify address belongs to user
-        if (!address.getUserId().equals(userId)) {
+        if (!address.getUser().getId().equals(userId)) {
             throw new ResourceNotFoundException("Address not found for this user");
         }
 
@@ -133,7 +132,7 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Address", "id", addressId));
 
         // Verify address belongs to user
-        if (!address.getUserId().equals(userId)) {
+        if (!address.getUser().getId().equals(userId)) {
             throw new ResourceNotFoundException("Address not found for this user");
         }
 

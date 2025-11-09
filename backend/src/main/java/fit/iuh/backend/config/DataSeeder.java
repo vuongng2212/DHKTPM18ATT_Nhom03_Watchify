@@ -1,12 +1,24 @@
 package fit.iuh.backend.config;
 
-import fit.iuh.backend.modules.catalog.domain.entity.*;
-import fit.iuh.backend.modules.catalog.domain.repository.*;
+import fit.iuh.backend.modules.catalog.domain.entity.Brand;
+import fit.iuh.backend.modules.catalog.domain.entity.Category;
+import fit.iuh.backend.modules.catalog.domain.entity.Product;
+import fit.iuh.backend.modules.catalog.domain.entity.ProductDetail;
+import fit.iuh.backend.modules.catalog.domain.entity.ProductImage;
+import fit.iuh.backend.modules.catalog.domain.entity.ProductStatus;
+import fit.iuh.backend.modules.catalog.domain.repository.BrandRepository;
+import fit.iuh.backend.modules.catalog.domain.repository.CategoryRepository;
+import fit.iuh.backend.modules.catalog.domain.repository.ProductDetailRepository;
+import fit.iuh.backend.modules.catalog.domain.repository.ProductImageRepository;
+import fit.iuh.backend.modules.catalog.domain.repository.ProductRepository;
+import fit.iuh.backend.modules.identity.domain.entity.Address;
+import fit.iuh.backend.modules.identity.domain.entity.AddressType;
 import fit.iuh.backend.modules.identity.domain.entity.Role;
 import fit.iuh.backend.modules.identity.domain.entity.User;
 import fit.iuh.backend.modules.identity.domain.entity.UserStatus;
 import fit.iuh.backend.modules.identity.domain.repository.RoleRepository;
 import fit.iuh.backend.modules.identity.domain.repository.UserRepository;
+import fit.iuh.backend.modules.identity.domain.repository.AddressRepository;
 import fit.iuh.backend.modules.inventory.domain.entity.Inventory;
 import fit.iuh.backend.modules.inventory.domain.repository.InventoryRepository;
 import fit.iuh.backend.sharedkernel.util.SlugUtils;
@@ -40,6 +52,7 @@ public class DataSeeder {
     private final ProductImageRepository productImageRepository;
     private final ProductDetailRepository productDetailRepository;
     private final InventoryRepository inventoryRepository;
+    private final AddressRepository addressRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Bean
@@ -64,6 +77,7 @@ public class DataSeeder {
 
             // 6. Seed Inventory
             seedInventories();
+            seedAddresses();
 
             log.info("Data seeding completed!");
         };
@@ -347,5 +361,41 @@ public class DataSeeder {
                 .build();
 
         productDetailRepository.save(detail);
+    }
+
+    private void seedAddresses() {
+        if (addressRepository.count() == 0) {
+            User customer = userRepository.findByEmail("customer@example.com").orElseThrow();
+
+            List<Address> addresses = List.of(
+                    Address.builder()
+                            .user(customer)
+                            .type(AddressType.SHIPPING)
+                            .fullName("John Doe")
+                            .phone("0987654321")
+                            .street("123 Nguyen Trai Street")
+                            .ward("Ward 1")
+                            .district("District 1")
+                            .city("Ho Chi Minh City")
+                            .address("123 Nguyen Trai Street, Ward 1, District 1, Ho Chi Minh City")
+                            .isDefault(true)
+                            .build(),
+                    Address.builder()
+                            .user(customer)
+                            .type(AddressType.BILLING)
+                            .fullName("John Doe")
+                            .phone("0987654321")
+                            .street("456 Le Loi Street")
+                            .ward("Ward 2")
+                            .district("District 2")
+                            .city("Ho Chi Minh City")
+                            .address("456 Le Loi Street, Ward 2, District 2, Ho Chi Minh City")
+                            .isDefault(false)
+                            .build()
+            );
+
+            addressRepository.saveAll(addresses);
+            log.info("Seeded {} addresses for customer", addresses.size());
+        }
     }
 }

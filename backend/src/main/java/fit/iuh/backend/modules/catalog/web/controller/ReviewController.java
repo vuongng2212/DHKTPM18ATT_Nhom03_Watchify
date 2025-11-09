@@ -2,6 +2,7 @@ package fit.iuh.backend.modules.catalog.web.controller;
 
 import fit.iuh.backend.modules.catalog.application.dto.ReviewDto;
 import fit.iuh.backend.modules.catalog.application.service.ReviewService;
+import fit.iuh.backend.modules.identity.domain.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -34,6 +35,7 @@ import java.util.UUID;
 public class ReviewController {
 
     private final ReviewService reviewService;
+    private final UserRepository userRepository;
 
     @GetMapping("/products/{productId}")
     @Operation(summary = "Get product reviews", description = "Get all approved reviews for a product")
@@ -58,7 +60,9 @@ public class ReviewController {
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     public ResponseEntity<List<ReviewDto>> getMyReviews(Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
+        String email = authentication.getName();
+        UUID userId = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found")).getId();
         List<ReviewDto> reviews = reviewService.getUserReviews(userId);
         return ResponseEntity.ok(reviews);
     }
@@ -71,7 +75,9 @@ public class ReviewController {
             @Valid @RequestBody CreateReviewRequest request,
             Authentication authentication
     ) {
-        UUID userId = UUID.fromString(authentication.getName());
+        String email = authentication.getName();
+        UUID userId = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found")).getId();
         ReviewDto review = reviewService.createReview(
             request.getProductId(),
             userId,

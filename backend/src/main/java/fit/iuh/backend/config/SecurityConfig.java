@@ -89,6 +89,7 @@ public class SecurityConfig {
         // Allow frontend origins
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",    // React default
+                "http://localhost:3001",    // React/Vite on port 3001
                 "http://localhost:4200",    // Angular default
                 "http://localhost:5173",    // Vite default
                 "http://localhost:8081"     // Other frontend ports
@@ -107,7 +108,8 @@ public class SecurityConfig {
                 "Accept",
                 "Origin",
                 "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
+                "Access-Control-Request-Headers",
+                "delay"
         ));
         
         // Expose headers

@@ -62,4 +62,16 @@ public class AuthController {
         UserDto user = authService.getCurrentUser();
         return ResponseEntity.ok(user);
     }
+
+    /**
+     * Logout the current user
+     * 
+     * @return success response
+     */
+    @Operation(summary = "Logout", description = "Logout the current user")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        // Since JWT is stateless, logout is handled client-side by removing token
+        return ResponseEntity.ok().build();
+    }
 }

@@ -20,6 +20,7 @@ const createInstanceAxios = (baseURL) => {
   // Add a request interceptor
   instance.interceptors.request.use(
     function (config) {
+      console.log("Axios Request:", config.url, config.params);
       const token = localStorage.getItem("accessToken");
       const auth = token ? `Bearer ${token}` : "";
       config.headers["Authorization"] = auth;
@@ -27,6 +28,7 @@ const createInstanceAxios = (baseURL) => {
       return config;
     },
     function (error) {
+      console.log("Axios Request Error:", error);
       // Do something with request error
       return Promise.reject(error);
     }
@@ -35,10 +37,12 @@ const createInstanceAxios = (baseURL) => {
   // Add a response interceptor
   instance.interceptors.response.use(
     function (response) {
+      console.log("Axios Response:", response.config.url, response.status, response.data);
       if (response && response.data) return response.data;
       return response;
     },
     async function (error) {
+      console.log("Axios Response Error:", error.config?.url, error.response?.status, error.message);
       if (error.config && error.response && +error.response.status === 401) {
         const access_token = await handleRefreshToken();
         if (access_token) {

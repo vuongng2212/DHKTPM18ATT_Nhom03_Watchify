@@ -15,16 +15,16 @@ const LoginPage = () => {
 
   const onFinish = async (values) => {
     setIsSubmit(true);
-    const { email, matKhau } = values;
+    const { email, password } = values;
     const res = await loginApi({
       email,
-      matKhau,
+      password,
     });
 
-    if (res?.data) {
+    if (res?.token) {
       setIsAuthenticated(true);
-      setUser(res.data.user);
-      localStorage.setItem("accessToken", res.data.accessToken);
+      setUser(res.user);
+      localStorage.setItem("accessToken", res.token);
       messageApi.open({
         type: "success",
         content: "Đăng nhập thành công!",
@@ -76,7 +76,7 @@ const LoginPage = () => {
 
               <Form.Item
                 label="Mật khẩu"
-                name="matKhau"
+                name="password"
                 rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
               >
                 <Input.Password

@@ -20,7 +20,7 @@ import UpdateNewPassword from "./pages/client/auth/UpdateNewPassword";
 import LoginPage from "./pages/client/auth/Login";
 import RegisterPage from "./pages/client/auth/Register";
 import { AppProvider } from "./context/app.context";
-import FormAddProduct from "./pages/admin/formAddProduct";
+import FormAddProduct from "./pages/admin/FormAddProduct";
 import FormUpdate from "./pages/admin/FormUpdate";
 import Dashboard from "./pages/admin/DashBoard";
 const router = createBrowserRouter([

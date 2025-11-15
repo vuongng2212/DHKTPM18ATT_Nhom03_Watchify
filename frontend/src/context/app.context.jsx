@@ -27,8 +27,8 @@ export const AppProvider = ({ children }) => {
 
         const res = await fetchAccountApi();
 
-        if (res.data) {
-          setUser(res.data.user);
+        if (res) {
+          setUser(res.user);
           setIsAuthenticated(true);
         } else {
           localStorage.removeItem("accessToken");

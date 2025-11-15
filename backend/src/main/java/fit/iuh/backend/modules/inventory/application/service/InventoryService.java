@@ -1,15 +1,22 @@
 package fit.iuh.backend.modules.inventory.application.service;
 
-import fit.iuh.backend.modules.inventory.application.dto.InventoryDto;
-import fit.iuh.backend.modules.inventory.domain.entity.Inventory;
-import fit.iuh.backend.modules.inventory.domain.repository.InventoryRepository;
-import fit.iuh.backend.sharedkernel.exception.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.UUID;
+
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
+import fit.iuh.backend.modules.inventory.application.dto.InventoryDto;
+import fit.iuh.backend.modules.inventory.domain.entity.Inventory;
+import fit.iuh.backend.modules.inventory.domain.repository.InventoryRepository;
+import fit.iuh.backend.modules.order.domain.entity.Order;
+import fit.iuh.backend.modules.order.domain.entity.OrderItem;
+import fit.iuh.backend.modules.order.domain.repository.OrderRepository;
+import fit.iuh.backend.sharedkernel.event.OrderCreatedEvent;
+import fit.iuh.backend.sharedkernel.event.PaymentSuccessEvent;
+import fit.iuh.backend.sharedkernel.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service for Inventory operations
@@ -21,6 +28,7 @@ import java.util.UUID;
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
+    private final OrderRepository orderRepository;
 
     /**
      * Get inventory by product ID
@@ -139,6 +147,65 @@ public class InventoryService {
         log.info("Created/updated inventory for product {}: {} units", productId, quantity);
 
         return mapToDto(saved);
+    }
+
+    /**
+     * Handle OrderCreatedEvent: Reserve stock for order items
+     */
+    @EventListener
+    @Transactional
+    public void handleOrderCreated(OrderCreatedEvent event) {
+        log.info("Handling OrderCreatedEvent for order: {}", event.getOrderId());
+
+        Order order = orderRepository.findById(event.getOrderId())
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + event.getOrderId()));
+
+        boolean allReserved = true;
+        for (OrderItem item : order.getItems()) {
+            UUID productId = item.getProduct().getId();
+            Integer quantity = item.getQuantity();
+
+            if (!reserveQuantity(productId, quantity)) {
+                allReserved = false;
+                log.error("Failed to reserve stock for product {} in order {}", productId, event.getOrderId());
+                // TODO: Handle reservation failure - could cancel order or notify
+            }
+        }
+
+        if (allReserved) {
+            log.info("Successfully reserved stock for all items in order {}", event.getOrderId());
+        } else {
+            log.warn("Partial reservation failure for order {}", event.getOrderId());
+        }
+    }
+
+    /**
+     * Handle PaymentSuccessEvent: Confirm reservations and deduct stock
+     */
+    @EventListener
+    @Transactional
+    public void handlePaymentSuccess(PaymentSuccessEvent event) {
+        log.info("Handling PaymentSuccessEvent for order: {}", event.getOrderId());
+
+        Order order = orderRepository.findById(event.getOrderId())
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + event.getOrderId()));
+
+        boolean allConfirmed = true;
+        for (OrderItem item : order.getItems()) {
+            UUID productId = item.getProduct().getId();
+            Integer quantity = item.getQuantity();
+
+            if (!confirmReservation(productId, quantity)) {
+                allConfirmed = false;
+                log.error("Failed to confirm reservation for product {} in order {}", productId, event.getOrderId());
+            }
+        }
+
+        if (allConfirmed) {
+            log.info("Successfully confirmed reservations and deducted stock for order {}", event.getOrderId());
+        } else {
+            log.warn("Partial confirmation failure for order {}", event.getOrderId());
+        }
     }
 
     private InventoryDto mapToDto(Inventory inventory) {

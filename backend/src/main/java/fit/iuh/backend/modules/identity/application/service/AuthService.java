@@ -1,14 +1,31 @@
 package fit.iuh.backend.modules.identity.application.service;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import fit.iuh.backend.config.security.JwtTokenProvider;
 import fit.iuh.backend.modules.identity.application.dto.LoginRequest;
 import fit.iuh.backend.modules.identity.application.dto.LoginResponse;
 import fit.iuh.backend.modules.identity.application.dto.RegisterRequest;
 import fit.iuh.backend.modules.identity.application.dto.UserDto;
 import fit.iuh.backend.modules.identity.application.mapper.UserMapper;
+import fit.iuh.backend.modules.identity.domain.entity.RefreshToken;
 import fit.iuh.backend.modules.identity.domain.entity.Role;
 import fit.iuh.backend.modules.identity.domain.entity.User;
 import fit.iuh.backend.modules.identity.domain.entity.UserStatus;
+import fit.iuh.backend.modules.identity.domain.repository.RefreshTokenRepository;
 import fit.iuh.backend.modules.identity.domain.repository.RoleRepository;
 import fit.iuh.backend.modules.identity.domain.repository.UserRepository;
 import fit.iuh.backend.sharedkernel.exception.DuplicateResourceException;
@@ -18,14 +35,6 @@ import fit.iuh.backend.sharedkernel.exception.ValidationException;
 import fit.iuh.backend.sharedkernel.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Service handling authentication logic: register and login.
@@ -37,10 +46,14 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserMapper userMapper;
+
+    @Value("${jwt.refresh.expiration}")
+    private long refreshTokenExpirationMs;
 
     /**
      * Register a new user account
@@ -117,18 +130,25 @@ public class AuthService {
             // Set authentication in security context
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Generate JWT token
-            String token = jwtTokenProvider.generateToken(authentication);
-
             // Get user details
             User user = userRepository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new ResourceNotFoundException("User", "email", request.getEmail()));
+
+            // Generate JWT token
+            String token = jwtTokenProvider.generateToken(authentication);
+
+            // Generate refresh token
+            String refreshToken = generateRefreshToken(user);
 
             UserDto userDto = userMapper.toDto(user);
 
             log.info("User logged in successfully: {}", request.getEmail());
 
-            return new LoginResponse(token, userDto);
+            return LoginResponse.builder()
+                    .token(token)
+                    .refreshToken(refreshToken)
+                    .user(userDto)
+                    .build();
 
         } catch (BadCredentialsException ex) {
             log.warn("Failed login attempt for email: {}", request.getEmail());
@@ -155,5 +175,80 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
 
         return userMapper.toDto(user);
+    }
+
+    /**
+     * Generate a new refresh token for the user
+     * 
+     * @param user the user
+     * @return refresh token string
+     */
+    @Transactional
+    public String generateRefreshToken(User user) {
+        // Revoke all existing refresh tokens for this user
+        refreshTokenRepository.revokeAllUserTokens(user.getId());
+
+        // Generate new refresh token
+        String token = UUID.randomUUID().toString();
+        LocalDateTime expiryDate = LocalDateTime.now().plusSeconds(refreshTokenExpirationMs / 1000);
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .token(token)
+                .user(user)
+                .expiryDate(expiryDate)
+                .revoked(false)
+                .build();
+
+        refreshTokenRepository.save(refreshToken);
+
+        return token;
+    }
+
+    /**
+     * Validate refresh token and generate new access token
+     * 
+     * @param token refresh token string
+     * @return new access token
+     * @throws InvalidCredentialsException if token is invalid
+     */
+    @Transactional
+    public String refreshAccessToken(String token) {
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid refresh token"));
+
+        if (refreshToken.isExpired() || refreshToken.getRevoked()) {
+            throw new InvalidCredentialsException("Refresh token expired or revoked");
+        }
+
+        // Generate new access token
+        User user = refreshToken.getUser();
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                user.getEmail(), null, user.getRoles().stream()
+                        .map(role -> (GrantedAuthority) role::getName)
+                        .collect(Collectors.toList()));
+
+        return jwtTokenProvider.generateToken(authentication);
+    }
+
+    /**
+     * Revoke refresh token (logout)
+     * 
+     * @param token refresh token string
+     */
+    @Transactional
+    public void revokeRefreshToken(String token) {
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid refresh token"));
+
+        refreshToken.revoke();
+        refreshTokenRepository.save(refreshToken);
+    }
+
+    /**
+     * Clean up expired refresh tokens
+     */
+    @Transactional
+    public void cleanupExpiredTokens() {
+        refreshTokenRepository.deleteExpiredTokens(LocalDateTime.now());
     }
 }

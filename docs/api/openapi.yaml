@@ -25,8 +25,8 @@ tags:
     description: Các API quản lý đơn hàng của khách hàng
   - name: Admin/Products
     description: (Admin) Các API quản lý sản phẩm
-  - name: Admin/Orders
-    description: (Admin) Các API quản lý đơn hàng
+  - name: Inventory
+    description: Inventory management APIs
 
 paths:
   # Auth paths
@@ -59,6 +59,10 @@ paths:
   /orders/{orderId}:
     $ref: './paths/orders_detail.yaml'
 
+  # Inventory paths
+  /inventory/product/{productId}:
+    $ref: './paths/inventory_get.yaml'
+
 components:
   schemas:
     User:
@@ -67,6 +71,8 @@ components:
       $ref: './components/schemas/Product.yaml'
     ErrorResponse:
       $ref: './components/schemas/ErrorResponse.yaml'
+    Inventory:
+      $ref: './components/schemas/Inventory.yaml'
   securitySchemes:
     BearerAuth:
       type: http

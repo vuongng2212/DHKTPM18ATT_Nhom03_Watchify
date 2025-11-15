@@ -1,0 +1,50 @@
+.login-page {
+  font-family: inherit;
+  line-height: inherit;
+  text-transform: unset;
+  text-rendering: optimizeLegibility;
+  background-color: #fff;
+}
+
+.login-page .container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 80rem;
+  min-height: 75vh;
+  padding: 0 2rem;
+  margin: 0 auto;
+}
+
+.login-page .container .login-form {
+  max-width: 33rem;
+  width: 100%;
+  background-color: #fff;
+  border: 0.5px solid #cccccc56;
+  padding: 25px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px 0 #cccccc56;
+}
+
+.question {
+  text-align: center;
+}
+
+.text-link {
+  color: #1a73e8;
+  text-decoration: none;
+}
+
+.login-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.login-button .ant-btn-loading-icon {
+  display: flex !important;
+  align-items: center !important;
+  vertical-align: middle !important;
+  line-height: 1 !important;
+  margin-right: 8px !important;
+}

@@ -1,54 +1,53 @@
-import { useEffect, useRef, useState } from "react";
-import { Form, Input, Button, Upload, Select } from "antd";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Form, Input, Button, Upload, Select, Modal, Card, Space, Tag } from "antd";
 import {
   UserOutlined,
   LockOutlined,
   CameraOutlined,
   LoadingOutlined,
+  EnvironmentOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  HomeOutlined,
 } from "@ant-design/icons";
 import { useCurrentApp } from "../../context/app.context";
 import {
   changePasswordApi,
   updateProfileApi,
   uploadAvatarApi,
+  getUserAddressesApi,
+  createAddressApi,
+  updateAddressApi,
+  deleteAddressApi,
 } from "../../services/api";
 
 const ProfilePage = () => {
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
+  const [addressForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [selectedSection, setSelectedSection] = useState("info");
   const { user, setUser, messageApi, notificationApi } = useCurrentApp();
   const [fileList, setFileList] = useState([]);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [avatarSelected, setAvatarSelected] = useState(null);
+  const [addresses, setAddresses] = useState([]);
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
 
   const inputPasswordRef = useRef(null);
 
   useEffect(() => {
     if (user) {
       form.setFieldsValue({
-        id: user._id,
-        tenNguoiDung: user.tenNguoiDung,
+        tenNguoiDung: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
         email: user.email,
-        sdt: user.sdt,
-        gioiTinh: user.gioiTinh,
-        avatar: user.avatar,
+        sdt: user.phone,
       });
-      if (user.avatar) {
-        setFileList([
-          {
-            uid: "-1",
-            name: "avatar",
-            status: "done",
-            url: user.avatar,
-          },
-        ]);
-      } else {
-        setFileList([]);
-      }
     }
-  }, [user, form, selectedSection]);
+  }, [user, form]);
 
   useEffect(() => {
     if (selectedSection === "password") {
@@ -56,13 +55,47 @@ const ProfilePage = () => {
     }
   }, [selectedSection]);
 
+  const loadAddresses = useCallback(async () => {
+    try {
+      setAddressLoading(true);
+      console.log("Loading addresses...");
+      const res = await getUserAddressesApi();
+      console.log("Raw res:", res);
+      console.log("Is array?", Array.isArray(res));
+      setAddresses(Array.isArray(res) ? res : []);
+    } catch (error) {
+      console.error("Load addresses error:", error);
+      messageApi.error("Không thể tải danh sách địa chỉ");
+    } finally {
+      setAddressLoading(false);
+    }
+  }, [messageApi]);
+
+  useEffect(() => {
+    if (selectedSection === "addresses") {
+      loadAddresses();
+    }
+  }, [selectedSection, loadAddresses]);
+
   const handleUpdateProfile = async (values) => {
     try {
       setLoading(true);
-      const res = await updateProfileApi(values);
+      const { tenNguoiDung, email, sdt } = values;
+      const nameParts = tenNguoiDung.trim().split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
 
-      if (res.status && res.data) {
-        setUser(res.data.user);
+      const updateData = {
+        firstName,
+        lastName,
+        email,
+        phone: sdt,
+      };
+
+      const res = await updateProfileApi(user.id, updateData);
+
+      if (res) {
+        setUser(res);
         setAvatarSelected(null);
         messageApi.open({
           type: "success",
@@ -71,7 +104,7 @@ const ProfilePage = () => {
       } else {
         messageApi.open({
           type: "error",
-          content: res.message,
+          content: res.message || "Cập nhật thất bại.",
         });
       }
       setLoading(false);
@@ -181,6 +214,61 @@ const ProfilePage = () => {
     }
   };
 
+  const handleAddAddress = () => {
+    setEditingAddress(null);
+    addressForm.resetFields();
+    setAddressModalVisible(true);
+  };
+
+  const handleEditAddress = (address) => {
+    setEditingAddress(address);
+    addressForm.setFieldsValue({
+      type: address.type,
+      fullName: address.fullName,
+      phone: address.phone,
+      street: address.street,
+      ward: address.ward,
+      district: address.district,
+      city: address.city,
+      isDefault: address.isDefault,
+    });
+    setAddressModalVisible(true);
+  };
+
+  const handleDeleteAddress = async (addressId) => {
+    try {
+      setLoading(true);
+      await deleteAddressApi(addressId);
+      messageApi.success("Xóa địa chỉ thành công!");
+      loadAddresses();
+    } catch (error) {
+      messageApi.error("Không thể xóa địa chỉ");
+      console.error("Delete address error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddressSubmit = async (values) => {
+    try {
+      setLoading(true);
+      if (editingAddress) {
+        await updateAddressApi(editingAddress.id, values);
+        messageApi.success("Cập nhật địa chỉ thành công!");
+      } else {
+        await createAddressApi(values);
+        messageApi.success("Thêm địa chỉ thành công!");
+      }
+      setAddressModalVisible(false);
+      loadAddresses();
+    } catch (error) {
+      messageApi.error(editingAddress ? "Không thể cập nhật địa chỉ" : "Không thể thêm địa chỉ");
+      console.error("Address submit error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto my-10 px-6 min-h-[65vh]">
       <div className="flex flex-col md:flex-row gap-8">
@@ -254,6 +342,17 @@ const ProfilePage = () => {
             >
               <LockOutlined className="mr-2" />
               Đổi mật khẩu
+            </div>
+            <div
+              className={`py-2 px-3 rounded-md cursor-pointer mb-2 ${
+                selectedSection === "addresses"
+                  ? "bg-red-50 text-red-600"
+                  : "hover:bg-gray-50"
+              }`}
+              onClick={() => setSelectedSection("addresses")}
+            >
+              <EnvironmentOutlined className="mr-2" />
+              Địa chỉ giao hàng
             </div>
           </div>
         </div>
@@ -433,8 +532,179 @@ const ProfilePage = () => {
               </Form>
             </>
           )}
+          {selectedSection === "addresses" && (
+            <>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-800 select-none">
+                  Địa chỉ giao hàng
+                </h2>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleAddAddress}
+                  style={{ backgroundColor: "#993333" }}
+                >
+                  Thêm địa chỉ
+                </Button>
+              </div>
+
+              {addressLoading ? (
+                <div className="text-center py-8">
+                  <LoadingOutlined style={{ fontSize: 24 }} spin />
+                  <p className="mt-2">Đang tải...</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {addresses.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <EnvironmentOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
+                      <p className="mt-2">Chưa có địa chỉ nào</p>
+                    </div>
+                  ) : (
+                    <>
+                      {addresses.map((address) => (
+                        <Card
+                          key={address.id}
+                          className="relative"
+                          actions={[
+                            <EditOutlined
+                              key="edit"
+                              onClick={() => handleEditAddress(address)}
+                              className="text-blue-500"
+                            />,
+                            <DeleteOutlined
+                              key="delete"
+                              onClick={() => handleDeleteAddress(address.id)}
+                              className="text-red-500"
+                            />,
+                          ]}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="font-medium">{address.fullName}</span>
+                                <Tag color={address.type === "SHIPPING" ? "blue" : "green"}>
+                                  {address.type === "SHIPPING" ? "Giao hàng" : "Thanh toán"}
+                                </Tag>
+                                {address.isDefault && (
+                                  <Tag color="red">Mặc định</Tag>
+                                )}
+                              </div>
+                              <p className="text-gray-600 mb-1">
+                                <HomeOutlined className="mr-1" />
+                                {address.street}
+                                {address.ward && `, ${address.ward}`}
+                                {address.district && `, ${address.district}`}
+                                {address.city && `, ${address.city}`}
+                              </p>
+                              <p className="text-gray-600">
+                                📞 {address.phone}
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
+
+      {/* Address Modal */}
+      <Modal
+        title={editingAddress ? "Chỉnh sửa địa chỉ" : "Thêm địa chỉ mới"}
+        open={addressModalVisible}
+        onCancel={() => setAddressModalVisible(false)}
+        footer={null}
+        width={600}
+      >
+        <Form
+          form={addressForm}
+          layout="vertical"
+          onFinish={handleAddressSubmit}
+        >
+          <Form.Item
+            label="Loại địa chỉ"
+            name="type"
+            rules={[{ required: true, message: "Vui lòng chọn loại địa chỉ!" }]}
+          >
+            <Select placeholder="Chọn loại địa chỉ">
+              <Select.Option value="SHIPPING">Địa chỉ giao hàng</Select.Option>
+              <Select.Option value="BILLING">Địa chỉ thanh toán</Select.Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Họ và tên"
+            name="fullName"
+            rules={[{ required: true, message: "Vui lòng nhập họ và tên!" }]}
+          >
+            <Input placeholder="Nhập họ và tên" />
+          </Form.Item>
+
+          <Form.Item
+            label="Số điện thoại"
+            name="phone"
+            rules={[{ required: true, message: "Vui lòng nhập số điện thoại!" }]}
+          >
+            <Input placeholder="Nhập số điện thoại" />
+          </Form.Item>
+
+          <Form.Item
+            label="Địa chỉ"
+            name="street"
+            rules={[{ required: true, message: "Vui lòng nhập địa chỉ!" }]}
+          >
+            <Input placeholder="Nhập địa chỉ (số nhà, đường)" />
+          </Form.Item>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Form.Item label="Phường/Xã" name="ward">
+              <Input placeholder="Nhập phường/xã" />
+            </Form.Item>
+
+            <Form.Item label="Quận/Huyện" name="district">
+              <Input placeholder="Nhập quận/huyện" />
+            </Form.Item>
+
+            <Form.Item
+              label="Tỉnh/Thành phố"
+              name="city"
+              rules={[{ required: true, message: "Vui lòng nhập tỉnh/thành phố!" }]}
+            >
+              <Input placeholder="Nhập tỉnh/thành phố" />
+            </Form.Item>
+          </div>
+
+          <Form.Item name="isDefault" valuePropName="checked">
+            <div className="flex items-center">
+              <input type="checkbox" id="isDefault" className="mr-2" />
+              <label htmlFor="isDefault" className="text-sm">
+                Đặt làm địa chỉ mặc định
+              </label>
+            </div>
+          </Form.Item>
+
+          <Form.Item className="mt-6 text-right">
+            <Space>
+              <Button onClick={() => setAddressModalVisible(false)}>
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                style={{ backgroundColor: "#993333" }}
+              >
+                {editingAddress ? "Cập nhật" : "Thêm"}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

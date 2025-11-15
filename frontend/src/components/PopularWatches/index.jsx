@@ -37,8 +37,8 @@ const PopularWatches = ({ watches, title, mx, px }) => {
           >
             <div className="relative w-48 h-48 flex items-center justify-center">
               <img
-                src={watch.image || watch.hinhAnh[0].duLieuAnh}
-                alt={watch.name || watch.name}
+                src={watch.image || (watch.images && watch.images[0]?.imageUrl) || "https://via.placeholder.com/200x200?text=No+Image"}
+                alt={watch.name}
                 className="object-cover w-full h-full"
                 loading="lazy"
               />
@@ -68,11 +68,7 @@ const PopularWatches = ({ watches, title, mx, px }) => {
             </p>
 
             <p className="text-black font-bold text-lg transition-all duration-300 group-hover:scale-105">
-              {watch.price?.toLocaleString("vi-VN", {
-                style: "currency",
-                currency: "VND",
-              })}
-              {watch.giaBan?.toLocaleString("vi-VN", {
+              {(watch.price || watch.giaBan)?.toLocaleString("vi-VN", {
                 style: "currency",
                 currency: "VND",
               })}

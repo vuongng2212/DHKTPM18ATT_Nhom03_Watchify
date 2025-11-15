@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button, Divider, Form, Input, Select } from "antd";
 import { useCurrentApp } from "../../../context/app.context";
-import { registerApi } from "../../../services/api";
+import { registerApi, loginApi } from "../../../services/api";
 import "./Register.css";
 
 const RegisterPage = () => {
@@ -15,44 +15,52 @@ const RegisterPage = () => {
 
   const onFinish = async (values) => {
     setIsSubmit(true);
-    const { fullName, email, password, phone, gender } = values;
+    const { fullName, email, password, phone } = values;
     const nameParts = fullName.trim().split(" ");
     const firstName = nameParts[0] || "";
     const lastName = nameParts.slice(1).join(" ") || "";
 
-    const registerRes = await registerApi({
-      email,
-      password,
-      firstName,
-      lastName,
-      phone,
-    });
+    try {
+      const registerRes = await registerApi({
+        email,
+        password,
+        firstName,
+        lastName,
+        phone,
+      });
 
-    if (registerRes) {
-      // Auto login after register
-      const loginRes = await loginApi({ email, password });
-      if (loginRes?.token) {
-        localStorage.setItem("accessToken", loginRes.token);
-        setUser(loginRes.user);
-        setIsAuthenticated(true);
-        messageApi.open({
-          type: "success",
-          content: "Đăng ký thành công!",
-        });
-        navigate("/");
+      if (registerRes) {
+        // Auto login after register
+        const loginRes = await loginApi({ email, password });
+        if (loginRes?.token) {
+          localStorage.setItem("accessToken", loginRes.token);
+          setUser(loginRes.user);
+          setIsAuthenticated(true);
+          messageApi.open({
+            type: "success",
+            content: "Đăng ký thành công!",
+          });
+          navigate("/");
+        } else {
+          messageApi.open({
+            type: "error",
+            content: "Đăng ký thành công nhưng đăng nhập thất bại. Vui lòng đăng nhập lại.",
+          });
+        }
       } else {
         messageApi.open({
           type: "error",
-          content: "Đăng ký thành công nhưng đăng nhập thất bại. Vui lòng đăng nhập lại.",
+          content: registerRes.message || "Đăng ký thất bại.",
         });
       }
-    } else {
+    } catch (error) {
       messageApi.open({
         type: "error",
-        content: registerRes.message || "Đăng ký thất bại.",
+        content: error?.response?.data?.message || "Đăng ký thất bại.",
       });
+    } finally {
+      setIsSubmit(false);
     }
-    setIsSubmit(false);
   };
 
   useEffect(() => {

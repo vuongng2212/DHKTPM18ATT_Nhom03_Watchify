@@ -3,6 +3,18 @@ import { Mutex } from "async-mutex";
 
 const mutex = new Mutex();
 
+// Cookie helper functions
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+};
+
+const deleteCookie = (name) => {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+};
+
 const createInstanceAxios = (baseURL) => {
   const instance = axios.create({
     baseURL: baseURL,
@@ -11,9 +23,22 @@ const createInstanceAxios = (baseURL) => {
 
   const handleRefreshToken = async () => {
     return await mutex.runExclusive(async () => {
-      const res = await instance.post("/api/auth/refreshToken");
-      if (res && res.data) return res.data.accessToken;
-      else return null;
+      try {
+        const refreshToken = getCookie("refreshToken");
+        if (!refreshToken) return null;
+
+        const res = await instance.post("/api/v1/auth/refresh", { refreshToken });
+        if (res && res.token) {
+          localStorage.setItem("accessToken", res.token);
+          return res.token;
+        }
+      } catch (error) {
+        console.error("Refresh token failed:", error);
+        // Clear tokens on refresh failure
+        localStorage.removeItem("accessToken");
+        deleteCookie("refreshToken");
+      }
+      return null;
     });
   };
 
@@ -43,6 +68,12 @@ const createInstanceAxios = (baseURL) => {
     },
     async function (error) {
       console.log("Axios Response Error:", error.config?.url, error.response?.status, error.message);
+      // Skip refresh for logout endpoint
+      if (error.config?.url?.includes('/logout')) {
+        if (error && error.response && error.response.data)
+          return error.response.data;
+        return Promise.reject(error);
+      }
       if (error.config && error.response && +error.response.status === 401) {
         const access_token = await handleRefreshToken();
         if (access_token) {

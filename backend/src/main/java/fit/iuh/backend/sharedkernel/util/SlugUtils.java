@@ -28,10 +28,24 @@ public class SlugUtils {
             return "";
         }
         
-        String noWhitespace = WHITESPACE.matcher(input).replaceAll("-");
-        String normalized = Normalizer.normalize(noWhitespace, Normalizer.Form.NFD);
-        String slug = NON_LATIN.matcher(normalized).replaceAll("");
+        // Normalize to NFD to separate base characters and diacritics
+        String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
+        
+        // Remove diacritics (combining marks)
+        normalized = normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        
+        // Replace Vietnamese specific characters
+        normalized = normalized.replace("Đ", "D").replace("đ", "d");
+        
+        // Replace whitespace with dashes
+        String noWhitespace = WHITESPACE.matcher(normalized).replaceAll("-");
+        
+        // Remove non-word characters except dashes
+        String slug = NON_LATIN.matcher(noWhitespace).replaceAll("");
+        
+        // Remove leading/trailing dashes
         slug = EDGES_DASHES.matcher(slug).replaceAll("");
+        
         return slug.toLowerCase(Locale.ENGLISH);
     }
 }

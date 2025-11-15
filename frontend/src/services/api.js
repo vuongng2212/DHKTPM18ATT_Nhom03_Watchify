@@ -8,6 +8,7 @@ const axiosReview = createInstanceAxios(
 const axiosChatbot = createInstanceAxios(
   import.meta.env.VITE_BACKEND_CHATBOT_URL
 );
+const axiosInventory = createInstanceAxios(import.meta.env.VITE_BACKEND_CATALOG_URL);
 
 export const registerApi = (data) => {
   return axiosUser.post("/api/v1/auth/register", data);
@@ -17,12 +18,12 @@ export const loginApi = (data) => {
   return axiosUser.post("/api/v1/auth/login", data);
 };
 
-export const logoutApi = () => {
-  return axiosUser.post("/api/v1/auth/logout");
+export const refreshTokenApi = (refreshToken) => {
+  return axiosUser.post("/api/v1/auth/refresh", { refreshToken });
 };
 
-export const refreshTokenApi = () => {
-  return axiosUser.post("/api/auth/refreshToken");
+export const logoutApi = (refreshToken) => {
+  return axiosUser.post("/api/v1/auth/logout", { refreshToken });
 };
 
 export const fetchAccountApi = () => {
@@ -47,12 +48,32 @@ export const getUsersApi = (page = 1, limit = 5, search = "") => {
   );
 };
 
+export const getUserAddressesApi = () => {
+  return axiosUser.get("/api/v1/user/addresses");
+};
+
+export const createAddressApi = (data) => {
+  return axiosUser.post("/api/v1/user/addresses", data);
+};
+
+export const updateAddressApi = (addressId, data) => {
+  return axiosUser.put(`/api/v1/user/addresses/${addressId}`, data);
+};
+
+export const deleteAddressApi = (addressId) => {
+  return axiosUser.delete(`/api/v1/user/addresses/${addressId}`);
+};
+
+export const getDefaultAddressApi = () => {
+  return axiosUser.get("/api/v1/user/addresses/default");
+};
+
 export const createOrderApi = (data) => {
   return axiosOrder.post("/api/orders", data);
 };
 
-export const updateProfileApi = (data) => {
-  return axiosUser.put("/api/users", data);
+export const updateProfileApi = (userId, data) => {
+  return axiosUser.put(`/api/v1/users/${userId}`, data);
 };
 
 export const changePasswordApi = (data) => {
@@ -104,4 +125,37 @@ export const addAccessHistoryApi = (productId) => {
 
 export const getUserAnalyticsApi = () => {
   return axiosUser.get("/api/users/analytics");
+};
+
+export const getInventoryByProductIdApi = (productId) => {
+  return axiosInventory.get(`/api/v1/inventory/product/${productId}`);
+};
+
+export const getAvailableQuantityApi = (productId) => {
+  return axiosInventory.get(`/api/v1/inventory/product/${productId}/available`);
+};
+
+// Product APIs
+export const getProductsApi = (params = {}) => {
+  return axiosInventory.get("/api/v1/products", { params });
+};
+
+export const getProductByIdApi = (productId) => {
+  return axiosInventory.get(`/api/v1/products/${productId}`);
+};
+
+export const getProductBySlugApi = (slug) => {
+  return axiosInventory.get(`/api/v1/products/slug/${slug}`);
+};
+
+export const searchProductsApi = (keyword) => {
+  return axiosInventory.get(`/api/v1/products/search`, { params: { keyword } });
+};
+
+export const getFeaturedProductsApi = (limit = 10) => {
+  return axiosInventory.get(`/api/v1/products/featured`, { params: { limit } });
+};
+
+export const getNewProductsApi = (limit = 10) => {
+  return axiosInventory.get(`/api/v1/products/new`, { params: { limit } });
 };

@@ -28,7 +28,7 @@ export const AppProvider = ({ children }) => {
         const res = await fetchAccountApi();
 
         if (res) {
-          setUser(res.user);
+          setUser(res);
           setIsAuthenticated(true);
         } else {
           localStorage.removeItem("accessToken");
@@ -50,29 +50,35 @@ export const AppProvider = ({ children }) => {
 
   const addToCart = (product, quantity) => {
     setCarts((prevCarts) => {
-      const existingItem = prevCarts.find((item) => item._id === product._id);
+      const productId = product._id || product.id; // Support both _id (legacy) and id (backend)
+      const existingItem = prevCarts.find((item) => (item._id || item.id) === productId);
 
       if (existingItem) {
         const newCarts = prevCarts.map((item) =>
-          item._id === product._id
+          (item._id || item.id) === productId
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
         localStorage.setItem("carts", JSON.stringify(newCarts));
         return newCarts;
       } else {
+        const cartItem = { 
+          ...product, 
+          _id: productId, // Ensure _id is set for compatibility
+          quantity 
+        };
         localStorage.setItem(
           "carts",
-          JSON.stringify([...prevCarts, { ...product, quantity }])
+          JSON.stringify([...prevCarts, cartItem])
         );
-        return [...prevCarts, { ...product, quantity }];
+        return [...prevCarts, cartItem];
       }
     });
   };
 
   const removeFromCart = (productId) => {
     setCarts((prevCarts) => {
-      const newCarts = prevCarts.filter((item) => item._id !== productId);
+      const newCarts = prevCarts.filter((item) => (item._id || item.id) !== productId);
       localStorage.setItem("carts", JSON.stringify(newCarts));
       return newCarts;
     });
@@ -81,7 +87,7 @@ export const AppProvider = ({ children }) => {
   const updateCartItemQuantity = (productId, quantity) => {
     setCarts((prevCarts) => {
       const newCarts = prevCarts.map((item) =>
-        item._id === productId ? { ...item, quantity } : item
+        (item._id || item.id) === productId ? { ...item, quantity } : item
       );
       localStorage.setItem("carts", JSON.stringify(newCarts));
       return newCarts;

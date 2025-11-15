@@ -9,6 +9,7 @@ import { items } from "../../data";
 import { addReviewApi, fetchReviewsByProduct } from "../../services/api";
 import useWatchesData from "../../apiservice/useWathes";
 import { getProduct } from "../../apiservice/apiProduct";
+import { formatProductFromBackend } from "../../utils/productMapper";
 import "react-image-gallery/styles/css/image-gallery.css";
 import "../../styles/product.detail.css";
 
@@ -54,7 +55,9 @@ const ProductDetailPage = () => {
     const fetchDataViewDetail = async () => {
       const res = await getProduct(id);
       if (res) {
-        setDataViewDetail(res);
+        // Sử dụng formatProductFromBackend để đảm bảo dữ liệu nhất quán
+        const formattedProduct = formatProductFromBackend(res);
+        setDataViewDetail(formattedProduct);
       }
     };
 

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base URL for the BrandService API
-const BASE_URL = 'http://localhost:8888/api/v1/brands';
+const BASE_URL = `${import.meta.env.VITE_BACKEND_CATALOG_URL}/api/v1/brands`;
 
 // Function to create a new brand
 export const createBrand = async (brandData) => {

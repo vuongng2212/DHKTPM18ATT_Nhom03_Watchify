@@ -5,6 +5,13 @@ import { useCurrentApp } from "../../../context/app.context";
 import { loginApi } from "../../../services/api";
 import "./Login.css";
 
+// Cookie helper functions
+const setCookie = (name, value, days = 7) => {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; secure; samesite=strict`;
+};
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -16,30 +23,41 @@ const LoginPage = () => {
   const onFinish = async (values) => {
     setIsSubmit(true);
     const { email, password } = values;
-    const res = await loginApi({
-      email,
-      password,
-    });
-
-    if (res?.token) {
-      setIsAuthenticated(true);
-      setUser(res.user);
-      localStorage.setItem("accessToken", res.token);
-      messageApi.open({
-        type: "success",
-        content: "Đăng nhập thành công!",
+    try {
+      const res = await loginApi({
+        email,
+        password,
       });
-      navigate("/");
-    } else {
+
+      if (res?.token) {
+        setIsAuthenticated(true);
+        setUser(res.user);
+        localStorage.setItem("accessToken", res.token);
+        if (res.refreshToken) {
+          setCookie("refreshToken", res.refreshToken, 7); // 7 days
+        }
+        messageApi.open({
+          type: "success",
+          content: "Đăng nhập thành công!",
+        });
+        navigate("/");
+      } else {
+        messageApi.open({
+          type: "error",
+          content:
+            res.message && Array.isArray(res.message)
+              ? res.message[0]
+              : res.message,
+        });
+      }
+    } catch (error) {
       messageApi.open({
         type: "error",
-        content:
-          res.message && Array.isArray(res.message)
-            ? res.message[0]
-            : res.message,
+        content: error?.response?.data?.message || "Đăng nhập thất bại.",
       });
+    } finally {
+      setIsSubmit(false);
     }
-    setIsSubmit(false);
   };
 
   useEffect(() => {

@@ -10,6 +10,18 @@ import cartIcon from "../../assets/cart.png";
 import heartIcon from "../../assets/heart.png";
 import userIcon from "../../assets/user.png";
 
+// Cookie helper functions
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+};
+
+const deleteCookie = (name) => {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+};
+
 const Header = () => {
   const {
     favorite,
@@ -53,30 +65,41 @@ const Header = () => {
     }
   }, [logoutStatus, messageApi]);
 
-  const handleLogout = async () => {
+    const handleLogout = async () => {
     try {
       setIsAppLoading(true);
-      const response = await logoutApi();
+      const refreshToken = getCookie("refreshToken");
+      const response = await logoutApi(refreshToken);
+      // Always clear state and tokens on logout attempt
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsAppLoading(false);
+      setCarts([]);
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("carts");
+      deleteCookie("refreshToken");
       if (response) {
-        setUser(null);
-        setIsAuthenticated(false);
-        setCarts([]);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("carts");
         messageApi.success({
           content: "Đăng xuất thành công!",
           duration: 2,
         });
-        navigate("/");
       }
+      navigate("/");
     } catch (error) {
       console.error("Lỗi khi đăng xuất:", error);
+      // Still clear state and tokens even if API fails
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsAppLoading(false);
+      setCarts([]);
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("carts");
+      deleteCookie("refreshToken");
       messageApi.error({
-        content: "Có lỗi xảy ra khi đăng xuất!",
+        content: "Đã đăng xuất khỏi hệ thống!",
         duration: 2,
       });
-    } finally {
-      setIsAppLoading(false);
+      navigate("/");
     }
   };
 

@@ -1,20 +1,47 @@
 // src/apiservice/apiProduct.js
-import createInstanceAxios from "../services/axios.customize";
-
-const axiosCatalog = createInstanceAxios(import.meta.env.VITE_BACKEND_CATALOG_URL);
-
-const API_URL = "/api/v1/products";
+import { 
+  getProductsApi, 
+  getProductByIdApi, 
+  getProductBySlugApi, 
+  searchProductsApi, 
+  getFeaturedProductsApi, 
+  getNewProductsApi 
+} from "../services/api";
 
 // Lấy danh sách sản phẩm
 export const getProducts = async (params = {}) => {
-  const response = await axiosCatalog.get(API_URL, { params });
-  return response.data;
+  const response = await getProductsApi(params);
+  return response;
 };
 
-// Lấy một sản phẩm
+// Lấy một sản phẩm theo ID
 export const getProduct = async (id) => {
-  const response = await axiosCatalog.get(`${API_URL}/${id}`);
-  return response.data;
+  const response = await getProductByIdApi(id);
+  return response;
+};
+
+// Lấy sản phẩm theo slug
+export const getProductBySlug = async (slug) => {
+  const response = await getProductBySlugApi(slug);
+  return response;
+};
+
+// Tìm kiếm sản phẩm
+export const searchProducts = async (keyword) => {
+  const response = await searchProductsApi(keyword);
+  return response;
+};
+
+// Lấy sản phẩm nổi bật
+export const getFeaturedProducts = async (limit = 10) => {
+  const response = await getFeaturedProductsApi(limit);
+  return response;
+};
+
+// Lấy sản phẩm mới
+export const getNewProducts = async (limit = 10) => {
+  const response = await getNewProductsApi(limit);
+  return response;
 };
 
 // Note: Backend does not have delete endpoint yet

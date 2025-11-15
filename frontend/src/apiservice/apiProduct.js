@@ -1,42 +1,38 @@
 // src/apiservice/apiProduct.js
-import axios from "axios";
+import createInstanceAxios from "../services/axios.customize";
 
-const API_URL = "http://localhost:5004/api/product";
+const axiosCatalog = createInstanceAxios(import.meta.env.VITE_BACKEND_CATALOG_URL);
+
+const API_URL = "/api/v1/products";
 
 // Lấy danh sách sản phẩm
-export const getProducts = async (page = 1, limit = 10) => {
-  const response = await axios.get(API_URL, {
-    params: { page, limit },
-  });
+export const getProducts = async (params = {}) => {
+  const response = await axiosCatalog.get(API_URL, { params });
   return response.data;
 };
 
 // Lấy một sản phẩm
 export const getProduct = async (id) => {
-  const response = await axios.get(`${API_URL}/getone/${id}`);
+  const response = await axiosCatalog.get(`${API_URL}/${id}`);
   return response.data;
 };
 
+// Note: Backend does not have delete endpoint yet
 export const deleteProduct = async (id) => {
-  const response = await axios.delete(`${API_URL}/delete/${id}`);
-  return response.data;
+  // Placeholder
+  throw new Error("Delete not implemented");
 };
 
 // Hàm để tạo sản phẩm mới
+// Note: Backend does not have create endpoint yet
 export const createProduct = async (formData) => {
-  return axios.post("http://localhost:5004/api/product/add", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  // Placeholder
+  throw new Error("Create not implemented");
 };
 
 // Hàm để cập nhật sản phẩm
+// Note: Backend does not have update endpoint yet
 export const updateProduct = async (id, formData) => {
-  const response = await axios.put(`${API_URL}/update/${id}`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-  return response.data;
+  // Placeholder
+  throw new Error("Update not implemented");
 };

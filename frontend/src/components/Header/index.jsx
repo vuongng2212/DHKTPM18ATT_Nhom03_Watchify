@@ -97,7 +97,7 @@ const Header = () => {
       onClick: handleLogout,
     },
   ];
-  if (user?.quyen.tenQuyen === "ADMIN") {
+  if (user?.roles?.includes("ROLE_ADMIN")) {
     items.unshift({
       label: <Link to="/admin">Trang quản trị</Link>,
       key: "admin",
@@ -144,7 +144,7 @@ const Header = () => {
                   <img width="26px" src={heartIcon} alt="Heart Icon" />
                 </Badge>
               </button>
-              {isAuthenticated ? (
+              {isAuthenticated && user ? (
                 <Dropdown menu={{ items }} placement="bottom">
                   <div className="flex items-center space-x-2 cursor-pointer hover:text-red-500 transition-all duration-300 hover:opacity-80">
                     <img
@@ -153,7 +153,7 @@ const Header = () => {
                       className="w-8 h-8 rounded-full object-cover"
                     />
                     <span className="text-sm font-medium">
-                      {user.tenNguoiDung}
+                      {user.fullName || `${user.firstName} ${user.lastName}`}
                     </span>
                   </div>
                 </Dropdown>
@@ -202,12 +202,12 @@ const Header = () => {
                   <li className="px-4 py-2">Không có thương hiệu</li>
                 ) : (
                   visibleBrands.map((brand) => (
-                    <li key={brand._id}>
+                    <li key={brand.id}>
                       <NavLink
-                        to={`/men/${brand.ten.toLowerCase().replace(" ", "-")}`}
+                        to={`/men/${brand.name?.toLowerCase().replace(" ", "-")}`}
                         className="block px-4 py-2 hover:bg-gray-100"
                       >
-                        {brand.ten}
+                        {brand.name || "Unknown"}
                       </NavLink>
                     </li>
                   ))
@@ -237,14 +237,14 @@ const Header = () => {
                   <li className="px-4 py-2">Không có thương hiệu</li>
                 ) : (
                   visibleBrands.map((brand) => (
-                    <li key={brand._id}>
+                    <li key={brand.id}>
                       <NavLink
-                        to={`/women/${brand.ten
-                          .toLowerCase()
+                        to={`/women/${brand.name
+                          ?.toLowerCase()
                           .replace(" ", "-")}`}
                         className="block px-4 py-2 hover:bg-gray-100"
                       >
-                        {brand.ten}
+                        {brand.name || "Unknown"}
                       </NavLink>
                     </li>
                   ))
@@ -254,7 +254,7 @@ const Header = () => {
           </div>
 
           {/* Dropdown cho Cặp Đôi */}
-          <div recyclclassName="relative group">
+          <div className="relative group">
             <NavLink
               to="/couple"
               className={({ isActive }) =>
@@ -274,14 +274,14 @@ const Header = () => {
                   <li className="px-4 py-2">Không có thương hiệu</li>
                 ) : (
                   visibleBrands.map((brand) => (
-                    <li key={brand._id}>
+                    <li key={brand.id}>
                       <NavLink
-                        to={`/couple/${brand.ten
-                          .toLowerCase()
+                        to={`/couple/${brand.name
+                          ?.toLowerCase()
                           .replace(" ", "-")}`}
                         className="block px-4 py-2 hover:bg-gray-100"
                       >
-                        {brand.ten}
+                        {brand.name || "Unknown"}
                       </NavLink>
                     </li>
                   ))

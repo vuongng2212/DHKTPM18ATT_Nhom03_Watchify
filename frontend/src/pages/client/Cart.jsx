@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Col, Row, Empty, Form, Input, Radio, Button } from "antd";
+import { Col, Row, Empty, Form, Input, Radio, Button, Select } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useCurrentApp } from "../../context/app.context";
 import { createOrderApi } from "../../services/api";
+import { getUserAddressesApi } from "../../services/api";
 import info from "../../assets/info.png";
 import discount from "../../assets/discount.png";
 import location from "../../assets/location.png";
@@ -22,6 +23,7 @@ const CartPage = () => {
   } = useCurrentApp();
   const [form] = Form.useForm();
   const [isSubmit, setIsSubmit] = useState(false);
+  const [addresses, setAddresses] = useState([]);
 
   useEffect(() => {
     if (user) {
@@ -31,8 +33,19 @@ const CartPage = () => {
         email: user.email,
         phuongThucThanhToan: "COD",
       });
+
+      // Fetch user addresses
+      const fetchAddresses = async () => {
+        try {
+          const res = await getUserAddressesApi();
+          setAddresses(res || []);
+        } catch (error) {
+          console.error("Error fetching addresses:", error);
+        }
+      };
+      fetchAddresses();
     }
-  }, [user]);
+  }, [user, form]);
 
   const handleIncreaseQuantity = (itemId) => {
     const item = carts.find((item) => item._id === itemId);
@@ -76,19 +89,17 @@ const CartPage = () => {
   const handleSubmit = async (values) => {
     setIsSubmit(true);
 
-    const chiTietDonHang = carts.map((cart) => ({
-      sanPhamId: cart.id || cart._id,
-      tenSanPham: cart.name || cart.tenDH,
-      soLuong: cart.quantity,
-      giaBan: cart.price || cart.giaBan,
+    const items = carts.map((cart) => ({
+      productId: cart.id || cart._id,
+      quantity: cart.quantity,
     }));
 
     const order = {
-      ...values,
-      trangThaiThanhToan: "Chưa thanh toán",
-      ghiChu: values.ghiChu ?? "",
-      chiTietDonHang,
-      tongTien: calculateTotal(),
+      paymentMethod: values.phuongThucThanhToan === "COD" ? "CASH_ON_DELIVERY" : "ONLINE_PAYMENT",
+      shippingAddress: values.diaChi,
+      billingAddress: values.diaChi,
+      notes: values.ghiChu ?? "",
+      items,
     };
 
     const res = await createOrderApi(order);
@@ -143,7 +154,7 @@ const CartPage = () => {
                 >
                   <div className="flex items-center space-x-4">
                     <img
-                      src={item.images?.[0] || item.hinhAnh[0].duLieuAnh}
+                      src={item.images?.[0] || item.hinhAnh?.[0]?.duLieuAnh || "https://via.placeholder.com/160x160?text=No+Image"}
                       alt={item.name}
                       className="w-40 h-40 object-cover"
                     />
@@ -352,16 +363,30 @@ const CartPage = () => {
                         { required: true, message: "Vui lòng nhập địa chỉ!" },
                       ]}
                     >
-                      <Input
-                        className="w-full p-2 border border-black rounded-md text-[#676971] text-sm text-center"
-                        placeholder="Số nhà - Tên đường - Thôn/Xã"
-                        style={{ padding: 8 }}
-                        onKeyDown={(e) => {
-                          if (e.target.value.length === 0 && e.key === " ") {
-                            e.preventDefault();
-                          }
-                        }}
-                      />
+                      {addresses.length > 0 ? (
+                        <Select
+                          className="w-full border border-black rounded-md text-[#676971] text-sm"
+                          placeholder="Chọn địa chỉ giao hàng"
+                          style={{ padding: 8 }}
+                        >
+                          {addresses.map((addr) => (
+                            <Select.Option key={addr.id} value={addr.fullAddress}>
+                              {addr.fullAddress}
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      ) : (
+                        <Input
+                          className="w-full p-2 border border-black rounded-md text-[#676971] text-sm text-center"
+                          placeholder="Số nhà - Tên đường - Thôn/Xã"
+                          style={{ padding: 8 }}
+                          onKeyDown={(e) => {
+                            if (e.target.value.length === 0 && e.key === " ") {
+                              e.preventDefault();
+                            }
+                          }}
+                        />
+                      )}
                     </Form.Item>
                   </div>
 

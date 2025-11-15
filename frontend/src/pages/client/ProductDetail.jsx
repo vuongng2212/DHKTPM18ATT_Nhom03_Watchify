@@ -13,9 +13,9 @@ import "react-image-gallery/styles/css/image-gallery.css";
 import "../../styles/product.detail.css";
 
 const typeMapping = {
-  Nam: "Đồng Hồ Nam",
-  Nữ: "Đồng Hồ Nữ",
-  Couple: "Đồng Hồ Cặp",
+  "Nam": "Đồng Hồ Nam",
+  "Nữ": "Đồng Hồ Nữ",
+  "Couple": "Đồng Hồ Cặp",
 };
 
 const ProductDetailPage = () => {
@@ -53,8 +53,8 @@ const ProductDetailPage = () => {
   useEffect(() => {
     const fetchDataViewDetail = async () => {
       const res = await getProduct(id);
-      if (res.productData) {
-        setDataViewDetail(res.productData);
+      if (res) {
+        setDataViewDetail(res);
       }
     };
 
@@ -65,14 +65,8 @@ const ProductDetailPage = () => {
     if (dataViewDetail) {
       const imagesArr =
         dataViewDetail.images?.map((image) => ({
-          original: image,
-          thumbnail: image,
-          originalClass: "original-image",
-          thumbnailClass: "thumbnail-image",
-        })) ||
-        dataViewDetail.hinhAnh?.map((image) => ({
-          original: image.duLieuAnh,
-          thumbnail: image.duLieuAnh,
+          original: image.imageUrl,
+          thumbnail: image.imageUrl,
           originalClass: "original-image",
           thumbnailClass: "thumbnail-image",
         })) ||
@@ -84,17 +78,17 @@ const ProductDetailPage = () => {
 
   // Lọc sản phẩm tương tự theo category
   useEffect(() => {
-    if (dataViewDetail?.danhMuc && !loading && data) {
+    if (dataViewDetail?.category?.name && !loading && data) {
       const allWatches = [...data.male, ...data.female, ...data.couple];
       const similarWatches = allWatches.filter(
         (watch) =>
-          watch.category === dataViewDetail.danhMuc &&
-          watch.id !== dataViewDetail._id
+          watch.category === dataViewDetail.category.name &&
+          watch.id !== dataViewDetail.id
       );
 
       setFilteredWatches(similarWatches);
     }
-  }, [dataViewDetail?.danhMuc, data, loading, dataViewDetail?._id]);
+  }, [dataViewDetail?.category?.name, data, loading, dataViewDetail?.id]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -126,7 +120,7 @@ const ProductDetailPage = () => {
       addToCart(
         {
           ...dataViewDetail,
-          _id: dataViewDetail._id,
+          id: dataViewDetail.id,
         },
         quantity
       );
@@ -146,7 +140,7 @@ const ProductDetailPage = () => {
     setSubmitLoading(true);
     try {
       await addReviewApi({
-        product: dataViewDetail._id,
+        product: dataViewDetail.id,
         star: newStar,
         comment: newComment,
       });
@@ -154,7 +148,7 @@ const ProductDetailPage = () => {
       setNewStar(0);
       setNewComment("");
       setReviewLoading(true);
-      const res = await fetchReviewsByProduct(dataViewDetail._id);
+      const res = await fetchReviewsByProduct(dataViewDetail.id);
       if (res.success) setReviews(res.data);
     } catch (error) {
       console.error(error);
@@ -166,14 +160,14 @@ const ProductDetailPage = () => {
   };
 
   useEffect(() => {
-    if (dataViewDetail?._id) {
+    if (dataViewDetail?.id) {
       setReviewLoading(true);
-      fetchReviewsByProduct(dataViewDetail._id)
+      fetchReviewsByProduct(dataViewDetail.id)
         .then((res) => res.success && setReviews(res.data))
         .catch((err) => console.error(err))
         .finally(() => setReviewLoading(false));
     }
-  }, [dataViewDetail?._id]);
+  }, [dataViewDetail?.id]);
 
   return (
     <>
@@ -197,7 +191,7 @@ const ProductDetailPage = () => {
             </Link>
           </Breadcrumb.Item>
           <Breadcrumb.Item>
-            {dataViewDetail.name || dataViewDetail.tenDH}
+            {dataViewDetail.name}
           </Breadcrumb.Item>
         </Breadcrumb>
 
@@ -217,20 +211,18 @@ const ProductDetailPage = () => {
 
           <Col span={16}>
             <h1 className="text-2xl font-bold text-[#676767] text-justify">
-              {dataViewDetail.name || dataViewDetail.tenDH}
+              {dataViewDetail.name}
             </h1>
             <h2 className="text-4xl text-[#C40D2E] mt-4">
-              {dataViewDetail?.price || dataViewDetail?.giaBan
-                ? (
-                    dataViewDetail.price || dataViewDetail.giaBan
-                  ).toLocaleString("vi-VN", {
+              {dataViewDetail?.price
+                ? dataViewDetail.price.toLocaleString("vi-VN", {
                     style: "currency",
                     currency: "VND",
                   })
                 : "Đang tải..."}
             </h2>
             <h3 className="text-sm text-[#676767] text-justify mt-4">
-              {dataViewDetail.moTa}
+              {dataViewDetail.description}
             </h3>
             <div className="flex items-center space-x-4 mt-4">
               <span className="text-[#666666]">Số lượng</span>
@@ -255,10 +247,8 @@ const ProductDetailPage = () => {
             <div className="mt-4">
               <span className="text-lg font-semibold">Tổng tiền: </span>
               <span className="text-xl text-[#C40D2E] font-bold">
-                {dataViewDetail?.price || dataViewDetail?.giaBan
-                  ? (
-                      (dataViewDetail.price || dataViewDetail.giaBan) * quantity
-                    ).toLocaleString("vi-VN", {
+                {dataViewDetail?.price
+                  ? (dataViewDetail.price * quantity).toLocaleString("vi-VN", {
                       style: "currency",
                       currency: "VND",
                     })

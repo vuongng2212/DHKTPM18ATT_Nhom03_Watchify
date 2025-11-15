@@ -19,9 +19,10 @@ const SkeletonLoader = () => (
 const MenPage = () => {
   const { data, loading, page, setPage, totalPages } = useWatchesData(1, 4);
   const maleWatches = data.male;
-  console.log("Data từ useWatchesData:", data);
+
   console.log("maleWatches:", maleWatches);
   console.log("totalPages:", totalPages);
+  console.log("Data from useWatchesData:", data);
   if (loading) {
     return (
       <div className="container mt-4 mb-20 mx-auto">

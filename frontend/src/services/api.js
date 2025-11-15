@@ -10,15 +10,15 @@ const axiosChatbot = createInstanceAxios(
 );
 
 export const registerApi = (data) => {
-  return axiosUser.post("/api/auth/register", data);
+  return axiosUser.post("/api/v1/auth/register", data);
 };
 
 export const loginApi = (data) => {
-  return axiosUser.post("/api/auth/login", data);
+  return axiosUser.post("/api/v1/auth/login", data);
 };
 
 export const logoutApi = () => {
-  return axiosUser.post("/api/auth/logout");
+  return axiosUser.post("/api/v1/auth/logout");
 };
 
 export const refreshTokenApi = () => {
@@ -26,11 +26,7 @@ export const refreshTokenApi = () => {
 };
 
 export const fetchAccountApi = () => {
-  return axiosUser.get("/api/auth/account", {
-    headers: {
-      delay: 1000,
-    },
-  });
+  return axiosUser.get("/api/v1/auth/me");
 };
 
 export const forgotPasswordApi = (email) => {

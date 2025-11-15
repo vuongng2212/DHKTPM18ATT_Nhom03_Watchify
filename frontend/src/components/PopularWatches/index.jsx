@@ -38,7 +38,7 @@ const PopularWatches = ({ watches, title, mx, px }) => {
             <div className="relative w-48 h-48 flex items-center justify-center">
               <img
                 src={watch.image || watch.hinhAnh[0].duLieuAnh}
-                alt={watch.name || watch.tenDH}
+                alt={watch.name || watch.name}
                 className="object-cover w-full h-full"
                 loading="lazy"
               />
@@ -64,7 +64,7 @@ const PopularWatches = ({ watches, title, mx, px }) => {
             </div>
 
             <p className="text-gray-700 text-sm mt-2 w-40 truncate transition-all duration-300 group-hover:scale-105">
-              {watch.name || watch.tenDH}
+              {watch.name || watch.name}
             </p>
 
             <p className="text-black font-bold text-lg transition-all duration-300 group-hover:scale-105">

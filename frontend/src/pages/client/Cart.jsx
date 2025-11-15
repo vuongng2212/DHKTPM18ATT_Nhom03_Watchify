@@ -76,13 +76,18 @@ const CartPage = () => {
 
   const calculateTotal = () => {
     return carts.reduce((total, item) => {
-      const priceNumber =
-        typeof item.price === "string" || typeof item.giaBan === "string"
-          ? Number(item.price.replace(/[^\d]/g, "")) ||
-            Number(item.giaBan.replace(/[^\d]/g, ""))
-          : item.price || item.giaBan;
-
-      return total + priceNumber * item.quantity;
+      // Xử lý giá từ backend (BigDecimal) hoặc từ frontend
+      let priceValue = item.price;
+      if (typeof item.price === 'object' && item.price !== null) {
+        // Nếu là BigDecimal từ backend, chuyển sang số
+        priceValue = parseFloat(item.price);
+      } else if (typeof item.price === 'string') {
+        priceValue = parseFloat(item.price.replace(/[^\d.]/g, ""));
+      } else if (item.giaBan) {
+        priceValue = typeof item.giaBan === 'object' ? parseFloat(item.giaBan) : item.giaBan;
+      }
+      
+      return total + (priceValue || 0) * item.quantity;
     }, 0);
   };
 
@@ -154,13 +159,13 @@ const CartPage = () => {
                 >
                   <div className="flex items-center space-x-4">
                     <img
-                      src={item.images?.[0] || item.hinhAnh?.[0]?.duLieuAnh || "https://via.placeholder.com/160x160?text=No+Image"}
+                      src={item.images?.[0] || (item.hinhAnh && Array.isArray(item.hinhAnh) && item.hinhAnh[0]?.duLieuAnh) || "https://via.placeholder.com/160x160?text=No+Image"}
                       alt={item.name}
                       className="w-40 h-40 object-cover"
                     />
                     <div className="flex flex-col justify-between">
                       <span className="font-semibold text-2xl">
-                        {item.name || item.tenDH}
+                        {item.name}
                       </span>
                       <div className="flex items-center gap-4 mt-6">
                         <div className="flex items-center space-x-4">
@@ -179,7 +184,7 @@ const CartPage = () => {
                           </button>
                         </div>
                         <span className="text-black font-semibold text-xl ml-3">
-                          {item.price || item.giaBan}
+                          {typeof item.price === 'object' ? item.price : item.price}
                         </span>
                       </div>
                       <div className="flex items-center space-x-6 mt-8">

@@ -134,3 +134,28 @@ export const getInventoryByProductIdApi = (productId) => {
 export const getAvailableQuantityApi = (productId) => {
   return axiosInventory.get(`/api/v1/inventory/product/${productId}/available`);
 };
+
+// Product APIs
+export const getProductsApi = (params = {}) => {
+  return axiosInventory.get("/api/v1/products", { params });
+};
+
+export const getProductByIdApi = (productId) => {
+  return axiosInventory.get(`/api/v1/products/${productId}`);
+};
+
+export const getProductBySlugApi = (slug) => {
+  return axiosInventory.get(`/api/v1/products/slug/${slug}`);
+};
+
+export const searchProductsApi = (keyword) => {
+  return axiosInventory.get(`/api/v1/products/search`, { params: { keyword } });
+};
+
+export const getFeaturedProductsApi = (limit = 10) => {
+  return axiosInventory.get(`/api/v1/products/featured`, { params: { limit } });
+};
+
+export const getNewProductsApi = (limit = 10) => {
+  return axiosInventory.get(`/api/v1/products/new`, { params: { limit } });
+};

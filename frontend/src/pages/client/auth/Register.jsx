@@ -16,28 +16,42 @@ const RegisterPage = () => {
   const onFinish = async (values) => {
     setIsSubmit(true);
     const { fullName, email, password, phone, gender } = values;
-    const res = await registerApi({
-      tenNguoiDung: fullName.trim(),
-      matKhau: password,
+    const nameParts = fullName.trim().split(" ");
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
+
+    const registerRes = await registerApi({
       email,
-      sdt: phone,
-      gioiTinh: gender,
+      password,
+      firstName,
+      lastName,
+      phone,
     });
 
-    if (res.data) {
-      localStorage.setItem("accessToken", res.data.accessToken);
-      setUser(res.data.user);
-      setIsAuthenticated(true);
-      messageApi.open({
-        type: "success",
-        content: "Đăng ký thành công!",
-      });
-      navigate("/");
-    } else
+    if (registerRes) {
+      // Auto login after register
+      const loginRes = await loginApi({ email, password });
+      if (loginRes?.token) {
+        localStorage.setItem("accessToken", loginRes.token);
+        setUser(loginRes.user);
+        setIsAuthenticated(true);
+        messageApi.open({
+          type: "success",
+          content: "Đăng ký thành công!",
+        });
+        navigate("/");
+      } else {
+        messageApi.open({
+          type: "error",
+          content: "Đăng ký thành công nhưng đăng nhập thất bại. Vui lòng đăng nhập lại.",
+        });
+      }
+    } else {
       messageApi.open({
         type: "error",
-        content: res.message,
+        content: registerRes.message || "Đăng ký thất bại.",
       });
+    }
     setIsSubmit(false);
   };
 

@@ -348,43 +348,53 @@ public class DataSeeder {
     }
 
     private void seedProductImages(UUID productId, String productName) {
-        // Use real watch images from Unsplash
-        String baseImageUrl = "https://images.unsplash.com/photo-";
-        List<String> imageOptions = List.of(
-            "1524592094714-0f0654e20314?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", // Luxury watch
-            "1508685096489-7aacd43bd3b1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", // Watch closeup
-            "1523275335684-37898b6baf30?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", // Watch on wrist
-            "1547996160-81dfa63595aa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", // Rolex style
-            "1587839624739-7b5c4b5b5b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", // Modern watch
-            "1600000000000-000000000000?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"  // Fallback
-        );
+        // Use LoremFlickr to fetch real watch images via Flickr tags.
+        // LoremFlickr supports tag-based images and a `lock` parameter to get deterministic images.
+        // Example: https://loremflickr.com/800/600/watch,rolex?lock=1234
+        String normalized = productName == null ? "product" : productName.toLowerCase();
+        normalized = normalized.replaceAll("\\s+", "-").replaceAll("[^a-z0-9\\-]", "");
 
-        // Select image based on product name hash for consistency
-        int imageIndex = Math.abs(productName.hashCode()) % imageOptions.size();
-        String imageUrl = baseImageUrl + imageOptions.get(imageIndex);
+        // Detect brand from product name for better relevance
+        String brandTag = "watch";
+        String lower = productName == null ? "" : productName.toLowerCase();
+        if (lower.startsWith("rolex")) brandTag = "rolex";
+        else if (lower.startsWith("omega")) brandTag = "omega";
+        else if (lower.startsWith("seiko")) brandTag = "seiko";
+        else if (lower.startsWith("casio")) brandTag = "casio";
+        else if (lower.startsWith("citizen")) brandTag = "citizen";
+        else if (lower.startsWith("tissot")) brandTag = "tissot";
+        else if (lower.startsWith("orient")) brandTag = "orient";
+        else if (lower.startsWith("hamilton")) brandTag = "hamilton";
+        else if (lower.startsWith("iwc")) brandTag = "iwc";
+        else if (lower.startsWith("tag")) brandTag = "tag-heuer";
+
+        int baseLock = Math.abs(normalized.hashCode() % 100000);
+        String imageUrl1 = "https://loremflickr.com/800/600/" + "watch," + brandTag + "?lock=" + (baseLock + 1);
+        String imageUrl2 = "https://loremflickr.com/800/600/" + "watch," + brandTag + "?lock=" + (baseLock + 2);
+        String imageUrl3 = "https://loremflickr.com/800/600/" + "watch," + brandTag + "?lock=" + (baseLock + 3);
 
         List<ProductImage> images = List.of(
-                ProductImage.builder()
-                        .productId(productId)
-                        .imageUrl(imageUrl)
-                        .altText(productName + " main image")
-                        .displayOrder(1)
-                        .isMain(true)
-                        .build(),
-                ProductImage.builder()
-                        .productId(productId)
-                        .imageUrl(baseImageUrl + imageOptions.get((imageIndex + 1) % imageOptions.size()))
-                        .altText(productName + " image 2")
-                        .displayOrder(2)
-                        .isMain(false)
-                        .build(),
-                ProductImage.builder()
-                        .productId(productId)
-                        .imageUrl(baseImageUrl + imageOptions.get((imageIndex + 2) % imageOptions.size()))
-                        .altText(productName + " image 3")
-                        .displayOrder(3)
-                        .isMain(false)
-                        .build()
+            ProductImage.builder()
+                .productId(productId)
+                .imageUrl(imageUrl1)
+                .altText(productName + " main image")
+                .displayOrder(1)
+                .isMain(true)
+                .build(),
+            ProductImage.builder()
+                .productId(productId)
+                .imageUrl(imageUrl2)
+                .altText(productName + " image 2")
+                .displayOrder(2)
+                .isMain(false)
+                .build(),
+            ProductImage.builder()
+                .productId(productId)
+                .imageUrl(imageUrl3)
+                .altText(productName + " image 3")
+                .displayOrder(3)
+                .isMain(false)
+                .build()
         );
 
         productImageRepository.saveAll(images);

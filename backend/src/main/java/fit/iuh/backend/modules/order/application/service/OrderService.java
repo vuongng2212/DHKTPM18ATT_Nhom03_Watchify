@@ -130,7 +130,7 @@ public class OrderService {
 
     public OrderListResponse getUserOrders(UUID userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Order> orderPage = orderRepository.findAll(pageable); // Simplified, should filter by user
+        Page<Order> orderPage = orderRepository.findByUserIdOrderByOrderDateDesc(userId, pageable);
 
         List<OrderDto> orderDtos = orderMapper.toDtoList(orderPage.getContent());
 

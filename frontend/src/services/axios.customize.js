@@ -45,7 +45,7 @@ const createInstanceAxios = (baseURL) => {
   // Add a request interceptor
   instance.interceptors.request.use(
     function (config) {
-      console.log("Axios Request:", config.url, config.params);
+      console.log("Axios Request:", config.url, config.params, config.data);
       const token = localStorage.getItem("accessToken");
       const auth = token ? `Bearer ${token}` : "";
       config.headers["Authorization"] = auth;

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Col, Row, Empty, Form, Input, Radio, Button, Select } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useCurrentApp } from "../../context/app.context";
-import { createOrderApi } from "../../services/api";
+import { createOrderApi, getPaymentByOrderIdApi } from "../../services/api";
 import { getUserAddressesApi } from "../../services/api";
 import info from "../../assets/info.png";
 import discount from "../../assets/discount.png";
@@ -86,7 +86,7 @@ const CartPage = () => {
       } else if (item.giaBan) {
         priceValue = typeof item.giaBan === 'object' ? parseFloat(item.giaBan) : item.giaBan;
       }
-      
+
       return total + (priceValue || 0) * item.quantity;
     }, 0);
   };
@@ -100,50 +100,70 @@ const CartPage = () => {
     }));
 
     const order = {
-      paymentMethod: values.phuongThucThanhToan === "COD" ? "CASH_ON_DELIVERY" : "ONLINE_PAYMENT",
+      paymentMethod: values.phuongThucThanhToan === "COD" ? "CASH_ON_DELIVERY" : "BANK_TRANSFER",
       shippingAddress: values.diaChi,
       billingAddress: values.diaChi,
       notes: values.ghiChu ?? "",
       items,
     };
 
-    const res = await createOrderApi(order);
+    console.log("Order data to send:", order);
 
-    if (res?.data) {
-      localStorage.removeItem("carts");
-      setCarts([]);
-      if (values.phuongThucThanhToan === "COD") {
-        messageApi.open({
-          type: "success",
-          content: "Đặt hàng thành công!",
-        });
-        navigate("/payment-result");
-      } else {
-        if (res.data.payment) {
-          window.location.href = res.data.payment.momoPayUrl;
-        } else {
-          notificationApi.error({
-            message: "Có lỗi xảy ra",
-            description:
-              res.message && Array.isArray(res.message)
-                ? res.message[0]
-                : res.message,
-            duration: 5,
+    try {
+      const res = await createOrderApi(order);
+
+      if (res) {
+        localStorage.removeItem("carts");
+        setCarts([]);
+        if (values.phuongThucThanhToan === "COD") {
+          messageApi.open({
+            type: "success",
+            content: "Đặt hàng thành công!",
           });
+          navigate("/payment-result");
+        } else {
+          // For MoMo payment, get payment URL and redirect
+          try {
+            const paymentRes = await getPaymentByOrderIdApi(res.id);
+            if (paymentRes && paymentRes.notes && paymentRes.notes.includes("Payment URL:")) {
+              const payUrl = paymentRes.notes.replace("Payment URL: ", "");
+              messageApi.open({
+                type: "info",
+                content: "Đang chuyển hướng đến trang thanh toán MoMo...",
+              });
+              // Redirect to MoMo payment page
+              window.location.href = payUrl;
+            } else {
+              messageApi.open({
+                type: "error",
+                content: "Không thể lấy URL thanh toán. Vui lòng thử lại.",
+              });
+            }
+          } catch (paymentError) {
+            console.error("Error fetching payment info:", paymentError);
+            messageApi.open({
+              type: "error",
+              content: "Không thể lấy thông tin thanh toán. Vui lòng thử lại.",
+            });
+          }
         }
+      } else {
+        notificationApi.error({
+          message: "Có lỗi xảy ra",
+          description: "Không nhận được phản hồi từ server",
+          duration: 5,
+        });
       }
-    } else {
+    } catch (error) {
+      console.error("Order creation error:", error);
       notificationApi.error({
         message: "Có lỗi xảy ra",
-        description:
-          res.message && Array.isArray(res.message)
-            ? res.message[0]
-            : res.message,
+        description: error.response?.data?.message || error.message || "Lỗi không xác định",
         duration: 5,
       });
+    } finally {
+      setIsSubmit(false);
     }
-
-    setIsSubmit(false);
   };
 
   return (

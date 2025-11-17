@@ -61,6 +61,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         
+                        // Public endpoints - Payment callbacks (MoMo return and IPN)
+                        .requestMatchers("/api/v1/payments/return", "/api/v1/payments/ipn/**").permitAll()
+                        
                         // Swagger/OpenAPI endpoints
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         

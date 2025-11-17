@@ -11,6 +11,23 @@ const HistoryPage = () => {
   const [dataDetail, setDataDetail] = useState(null);
   const { notificationApi } = useCurrentApp();
 
+  const mapOrderStatus = (status) => {
+    switch (status) {
+      case "PENDING": return "Chờ xác nhận";
+      case "CONFIRMED": return "Đã xác nhận";
+      case "PROCESSING": return "Đang xử lý";
+      case "SHIPPED": return "Đang giao hàng";
+      case "DELIVERED": return "Đã giao hàng";
+      case "CANCELLED": return "Đã hủy";
+      default: return "Không xác định";
+    }
+  };
+
+  const mapPaymentStatus = (status) => {
+    // Mock: Based on order status, assume paid if CONFIRMED or later
+    return status === "PENDING" ? "Chưa thanh toán" : "Đã thanh toán";
+  };
+
   const columns = [
     {
       title: "STT",
@@ -20,14 +37,14 @@ const HistoryPage = () => {
     },
     {
       title: "Thời gian",
-      dataIndex: "createdAt",
+      dataIndex: "orderDate",
       render: (item) => {
         return dayjs(item).format("DD-MM-YYYY");
       },
     },
     {
       title: "Tổng số tiền",
-      dataIndex: "tongTien",
+      dataIndex: "totalAmount",
       render: (item) => {
         return new Intl.NumberFormat("vi-VN", {
           style: "currency",
@@ -37,52 +54,52 @@ const HistoryPage = () => {
     },
     {
       title: "Trạng thái đơn hàng",
-      dataIndex: "trangThaiDonHang",
+      dataIndex: "status",
       render: (item) => (
         <Tag
           color={
-            item === "Chờ xác nhận"
+            mapOrderStatus(item) === "Chờ xác nhận"
               ? "gold"
-              : item === "Đã hủy"
-              ? "red"
-              : item === "Đang giao hàng"
-              ? "cyan"
-              : item === "Đã giao hàng"
-              ? "blue"
-              : "processing"
+              : mapOrderStatus(item) === "Đã hủy"
+                ? "red"
+                : mapOrderStatus(item) === "Đang giao hàng"
+                  ? "cyan"
+                  : mapOrderStatus(item) === "Đã giao hàng"
+                    ? "blue"
+                    : "processing"
           }
           style={
-            item === "Đã hủy"
+            mapOrderStatus(item) === "Đã hủy"
               ? {
-                  background: "#fff1f0",
-                  color: "#ff4d4f",
-                  borderColor: "#ffa39e",
-                }
-              : item === "Đang giao hàng"
-              ? {
+                background: "#fff1f0",
+                color: "#ff4d4f",
+                borderColor: "#ffa39e",
+              }
+              : mapOrderStatus(item) === "Đang giao hàng"
+                ? {
                   background: "#e6fffb",
                   color: "#13c2c2",
                   borderColor: "#87e8de",
                 }
-              : item === "Đã giao hàng"
-              ? {
-                  background: "#f0f5ff",
-                  color: "#2f54eb",
-                  borderColor: "#adc6ff",
-                }
-              : {}
+                : mapOrderStatus(item) === "Đã giao hàng"
+                  ? {
+                    background: "#f0f5ff",
+                    color: "#2f54eb",
+                    borderColor: "#adc6ff",
+                  }
+                  : {}
           }
         >
-          {item}
+          {mapOrderStatus(item)}
         </Tag>
       ),
     },
     {
       title: "Trạng thái thanh toán",
-      dataIndex: "trangThaiThanhToan",
+      dataIndex: "status",
       render: (item) => (
-        <Tag color={`${item === "Chưa thanh toán" ? "default" : "success"}`}>
-          {item}
+        <Tag color={`${mapPaymentStatus(item) === "Chưa thanh toán" ? "default" : "success"}`}>
+          {mapPaymentStatus(item)}
         </Tag>
       ),
     },
@@ -106,20 +123,26 @@ const HistoryPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const res = await getOrdersApi();
-      if (res.data) {
-        setDataHistory(res.data.orders);
-      } else {
+      try {
+        const res = await getOrdersApi(0, 10); // page 0-based
+        if (res && res.orders) {
+          setDataHistory(res.orders);
+        } else {
+          notificationApi.error({
+            message: "Đã có lỗi xảy ra",
+            description: "Không thể tải lịch sử đơn hàng",
+          });
+        }
+      } catch (error) {
         notificationApi.error({
           message: "Đã có lỗi xảy ra",
-          description: res.message,
+          description: error.message || "Lỗi không xác định",
         });
       }
       setLoading(false);
     };
-
     fetchData();
-  }, []);
+  }, [notificationApi]);
 
   return (
     <>
@@ -143,28 +166,39 @@ const HistoryPage = () => {
           }}
           open={openDetail}
         >
-          {dataDetail?.chiTietDonHang?.map((item, index) => {
+          {dataDetail?.items?.map((item, index) => {
             return (
               <ul className="space-y-2" key={index}>
                 <li>
                   <span className="font-[500] mr-1">Tên sản phẩm:</span>{" "}
-                  {item.tenSanPham}
+                  {item.product?.name || "N/A"}
                 </li>
                 <li>
                   <span className="font-[500] mr-1">Số lượng:</span>{" "}
-                  {item.soLuong}
+                  {item.quantity}
                 </li>
                 <li>
                   <span className="font-[500] mr-1">Giá:</span>
                   {new Intl.NumberFormat("vi-VN", {
                     style: "currency",
                     currency: "VND",
-                  }).format(item.giaBan)}{" "}
+                  }).format(item.unitPrice)}{" "}
+                </li>
+                <li>
+                  <span className="font-[500] mr-1">Tổng:</span>
+                  {new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                  }).format(item.totalPrice)}{" "}
                 </li>
                 <Divider />
               </ul>
             );
           })}
+          <div className="mt-4">
+            <p><strong>Địa chỉ giao hàng:</strong> {dataDetail?.shippingAddress}</p>
+            <p><strong>Ghi chú:</strong> {dataDetail?.notes || "Không có"}</p>
+          </div>
         </Drawer>
       </div>
     </>

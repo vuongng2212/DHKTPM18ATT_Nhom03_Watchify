@@ -69,7 +69,7 @@ export const getDefaultAddressApi = () => {
 };
 
 export const createOrderApi = (data) => {
-  return axiosOrder.post("/api/orders", data);
+  return axiosOrder.post("/api/v1/orders", data);
 };
 
 export const updateProfileApi = (userId, data) => {
@@ -81,15 +81,15 @@ export const changePasswordApi = (data) => {
 };
 
 export const getOrdersApi = (page = 1, limit = 10) => {
-  return axiosOrder.get(`/api/orders?page=${page}&limit=${limit}`);
+  return axiosOrder.get(`/api/v1/orders?page=${page}&limit=${limit}`);
 };
 
 export const getAllOrdersApi = (page = 1, limit = 10) => {
-  return axiosOrder.get(`/api/orders/all?page=${page}&limit=${limit}`);
+  return axiosOrder.get(`/api/v1/orders/all?page=${page}&limit=${limit}`);
 };
 
 export const updateOrderStatusApi = (orderId, trangThaiDonHang) => {
-  return axiosOrder.put(`/api/orders/${orderId}/status`, { trangThaiDonHang });
+  return axiosOrder.put(`/api/v1/orders/${orderId}/status`, { trangThaiDonHang });
 };
 
 export const fetchReviewsByProduct = (productId) => {
@@ -158,4 +158,8 @@ export const getFeaturedProductsApi = (limit = 10) => {
 
 export const getNewProductsApi = (limit = 10) => {
   return axiosInventory.get(`/api/v1/products/new`, { params: { limit } });
+};
+
+export const getPaymentByOrderIdApi = (orderId) => {
+  return axiosOrder.get(`/api/v1/payments/order/${orderId}`);
 };

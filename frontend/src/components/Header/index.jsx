@@ -27,7 +27,7 @@ const Header = () => {
     favorite,
     user,
     carts,
-    setCarts,
+    convertCartToGuest,
     isAuthenticated,
     setIsAppLoading,
     setUser,
@@ -65,18 +65,20 @@ const Header = () => {
     }
   }, [logoutStatus, messageApi]);
 
-    const handleLogout = async () => {
+  const handleLogout = async () => {
     try {
       setIsAppLoading(true);
       const refreshToken = getCookie("refreshToken");
+
+      // Chuyển giỏ hàng sang chế độ guest trước khi logout
+      convertCartToGuest();
+
       const response = await logoutApi(refreshToken);
       // Always clear state and tokens on logout attempt
       setUser(null);
       setIsAuthenticated(false);
       setIsAppLoading(false);
-      setCarts([]);
       localStorage.removeItem("accessToken");
-      localStorage.removeItem("carts");
       deleteCookie("refreshToken");
       if (response) {
         messageApi.success({
@@ -88,12 +90,11 @@ const Header = () => {
     } catch (error) {
       console.error("Lỗi khi đăng xuất:", error);
       // Still clear state and tokens even if API fails
+      convertCartToGuest();
       setUser(null);
       setIsAuthenticated(false);
       setIsAppLoading(false);
-      setCarts([]);
       localStorage.removeItem("accessToken");
-      localStorage.removeItem("carts");
       deleteCookie("refreshToken");
       messageApi.error({
         content: "Đã đăng xuất khỏi hệ thống!",

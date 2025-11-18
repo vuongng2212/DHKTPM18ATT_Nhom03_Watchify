@@ -16,7 +16,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [isSubmit, setIsSubmit] = useState(false);
-  const { setIsAuthenticated, setUser, messageApi } = useCurrentApp();
+  const { setIsAuthenticated, setUser, syncCartFromDatabase, messageApi } = useCurrentApp();
 
   const emailInputRef = useRef(null);
 
@@ -36,6 +36,10 @@ const LoginPage = () => {
         if (res.refreshToken) {
           setCookie("refreshToken", res.refreshToken, 7); // 7 days
         }
+
+        // Sync cart from database after login
+        await syncCartFromDatabase();
+
         messageApi.open({
           type: "success",
           content: "Đăng nhập thành công!",

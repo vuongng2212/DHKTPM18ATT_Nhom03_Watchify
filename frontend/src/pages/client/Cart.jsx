@@ -15,7 +15,7 @@ const CartPage = () => {
   const {
     user,
     carts,
-    setCarts,
+    clearCart,
     updateCartItemQuantity,
     removeFromCart,
     messageApi,
@@ -56,13 +56,13 @@ const CartPage = () => {
 
   const handleDecreaseQuantity = (itemId) => {
     const item = carts.find((item) => item._id === itemId);
-    if (item && item.quantity > 1) {
-      updateCartItemQuantity(itemId, item.quantity - 1);
-    } else {
-      messageApi.open({
-        type: "error",
-        content: "Số lượng không thể nhỏ hơn 1!",
-      });
+    if (item) {
+      if (item.quantity > 1) {
+        updateCartItemQuantity(itemId, item.quantity - 1);
+      } else {
+        // Xóa sản phẩm khi số lượng giảm về 0
+        handleRemoveItem(itemId);
+      }
     }
   };
 
@@ -86,7 +86,7 @@ const CartPage = () => {
       } else if (item.giaBan) {
         priceValue = typeof item.giaBan === 'object' ? parseFloat(item.giaBan) : item.giaBan;
       }
-      
+
       return total + (priceValue || 0) * item.quantity;
     }, 0);
   };
@@ -110,8 +110,7 @@ const CartPage = () => {
     const res = await createOrderApi(order);
 
     if (res?.data) {
-      localStorage.removeItem("carts");
-      setCarts([]);
+      await clearCart();
       if (values.phuongThucThanhToan === "COD") {
         messageApi.open({
           type: "success",

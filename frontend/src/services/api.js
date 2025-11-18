@@ -159,3 +159,27 @@ export const getFeaturedProductsApi = (limit = 10) => {
 export const getNewProductsApi = (limit = 10) => {
   return axiosInventory.get(`/api/v1/products/new`, { params: { limit } });
 };
+
+// Cart APIs
+export const getCartApi = () => {
+  return axiosUser.get("/cart");
+};
+
+export const addItemToCartApi = (productId, quantity) => {
+  return axiosUser.post("/cart/items", {
+    productId: productId,
+    quantity
+  });
+};
+
+export const updateCartItemApi = (productId, quantity) => {
+  return axiosUser.put(`/cart/items/${productId}`, { quantity });
+};
+
+export const removeCartItemApi = (productId) => {
+  return axiosUser.delete(`/cart/items/${productId}`);
+};
+
+export const clearCartApi = () => {
+  return axiosUser.delete("/cart");
+};

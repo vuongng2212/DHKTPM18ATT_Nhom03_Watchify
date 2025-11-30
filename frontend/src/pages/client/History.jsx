@@ -23,7 +23,10 @@ const HistoryPage = () => {
     }
   };
 
-  const mapPaymentStatus = (status) => {
+  const mapPaymentStatus = (status, paymentMethod) => {
+    if (paymentMethod === "CASH_ON_DELIVERY") {
+      return "Thanh toán khi nhận hàng";
+    }
     // Mock: Based on order status, assume paid if CONFIRMED or later
     return status === "PENDING" ? "Chưa thanh toán" : "Đã thanh toán";
   };
@@ -97,9 +100,9 @@ const HistoryPage = () => {
     {
       title: "Trạng thái thanh toán",
       dataIndex: "status",
-      render: (item) => (
-        <Tag color={`${mapPaymentStatus(item) === "Chưa thanh toán" ? "default" : "success"}`}>
-          {mapPaymentStatus(item)}
+      render: (text, record) => (
+        <Tag color={`${mapPaymentStatus(text, record.paymentMethod) === "Chưa thanh toán" ? "default" : "success"}`}>
+          {mapPaymentStatus(text, record.paymentMethod)}
         </Tag>
       ),
     },
@@ -146,7 +149,7 @@ const HistoryPage = () => {
 
   return (
     <>
-      <div style={{ margin: 50 }}>
+      <div style={{ margin: 50 }} className="pt-20">
         <h2 className="font-semibold uppercase text-center text-xl select-none">
           Lịch sử đơn hàng
         </h2>

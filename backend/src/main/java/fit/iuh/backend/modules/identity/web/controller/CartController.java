@@ -1,7 +1,7 @@
 package fit.iuh.backend.modules.identity.web.controller;
 
+import fit.iuh.backend.modules.catalog.application.dto.CartDto;
 import fit.iuh.backend.modules.catalog.application.service.CartService;
-import fit.iuh.backend.modules.catalog.domain.entity.Cart;
 import fit.iuh.backend.modules.identity.application.dto.AddItemToCartRequest;
 import fit.iuh.backend.modules.identity.application.dto.UpdateCartItemRequest;
 import jakarta.validation.Valid;
@@ -19,7 +19,7 @@ public class CartController {
     private final CartService cartService;
 
     @GetMapping
-    public Cart getCurrentCart(
+    public CartDto getCurrentCart(
             Authentication authentication
     ) {
         UUID userId = (UUID) authentication.getPrincipal();
@@ -27,7 +27,7 @@ public class CartController {
     }
 
     @PostMapping("/items")
-    public Cart addItemToCart(
+    public CartDto addItemToCart(
             @RequestBody @Valid AddItemToCartRequest request,
             Authentication authentication
     ) {
@@ -37,7 +37,7 @@ public class CartController {
 
 
     @PutMapping("/items/{productId}")
-    public Cart updateCartItem(
+    public CartDto updateCartItem(
             @PathVariable UUID productId,
             @RequestBody @Valid UpdateCartItemRequest request,
             Authentication authentication
@@ -48,7 +48,7 @@ public class CartController {
     }
 
     @DeleteMapping("/items/{productId}")
-    public Cart deleteCartItem(
+    public CartDto deleteCartItem(
             @PathVariable UUID productId,
             Authentication authentication
     ) {

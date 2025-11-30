@@ -15,36 +15,45 @@ export const formatProductFromBackend = (product) => {
     sku: product.sku || product.maDH || "Không rõ",
     description: product.description || product.moTa || "",
     shortDescription: product.shortDescription || "",
-    
+
     // Handle price - backend returns BigDecimal, convert to number
     price: convertPrice(product.price || product.giaBan || 0),
     originalPrice: convertPrice(product.originalPrice || 0),
     discountPercentage: product.discountPercentage || 0,
-    
+
     status: product.status || "active",
     isAvailable: product.isAvailable !== undefined ? product.isAvailable : true,
     isOnSale: product.isOnSale || false,
-    
+
     // Category and brand information
     category: product.category || { id: product.categoryId, name: product.danhMuc || "Không rõ" },
     brand: product.brand || { id: product.brandId, name: product.thuongHieu || "Không rõ" },
-    
+
     // Counters
     viewCount: product.viewCount || 0,
     isFeatured: product.isFeatured || false,
     isNew: product.isNew || false,
     displayOrder: product.displayOrder || 0,
-    
-    // Images - handle both backend format and legacy format
-    images: product.images?.map(img => 
-      typeof img === 'string' ? img : (img.imageUrl || (img.duLieuAnh && typeof img.duLieuAnh === 'object' ? img.duLieuAnh.url : img.duLieuAnh))
-    ) || [],
-    
+
+    // Images - normalize to array of objects with `imageUrl` (keeps compatibility
+    // with components that expect `image.imageUrl` and older code that used strings)
+    images: product.images?.map(img => {
+      if (!img) return null;
+      if (typeof img === 'string') return { imageUrl: img };
+      if (typeof img === 'object') {
+        if (img.imageUrl) return { imageUrl: img.imageUrl, altText: img.altText };
+        if (img.duLieuAnh && typeof img.duLieuAnh === 'object' && img.duLieuAnh.url) return { imageUrl: img.duLieuAnh.url };
+        // fallback: try to stringify or use as-is
+        return { imageUrl: String(img) };
+      }
+      return null;
+    }).filter(Boolean) || [],
+
     // Additional info
     detail: product.detail || null,
     averageRating: product.averageRating || 0,
     reviewCount: product.reviewCount || 0,
-    
+
     // Timestamps
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
@@ -81,7 +90,7 @@ const convertPrice = (price) => {
     // If it has a value property or similar
     return parseFloat(Object.values(price)[0]) || 0;
   }
- return 0;
+  return 0;
 };
 
 /**
@@ -90,10 +99,10 @@ const convertPrice = (price) => {
  * @returns {Object} - Formatted product for cart
  */
 export const formatProductForCart = (product) => {
- const formatted = formatProductFromBackend(product);
+  const formatted = formatProductFromBackend(product);
   return {
     ...formatted,
     quantity: product.quantity || 1,
     _id: product._id || formatted.id, // Use existing _id or fallback to id
- };
+  };
 };

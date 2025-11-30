@@ -9,7 +9,7 @@ const HomePage = () => {
   const { data, loading } = useWatchesData();
 
   return (
-    <div className="container mt-4 mb-20 mx-auto">
+    <div className="container mt-4 mb-20 mx-auto pt-20">
       <Banner />
       <ProductCategories />
       <FeaturedCategory />

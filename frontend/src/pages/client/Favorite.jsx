@@ -6,7 +6,7 @@ const FavoritePage = () => {
   const { favorite, removeFromFavorite } = useCurrentApp();
 
   return (
-    <div className="container mx-auto py-8 px-6">
+    <div className="container mx-auto py-8 px-6 pt-20">
       {favorite.length > 0 ? (
         <>
           <h2 className="text-left text-lg font-bold text-[#344054] mb-6">

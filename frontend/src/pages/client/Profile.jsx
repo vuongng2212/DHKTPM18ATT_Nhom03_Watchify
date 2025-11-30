@@ -270,7 +270,7 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="container mx-auto my-10 px-6 min-h-[65vh]">
+    <div className="container mx-auto my-10 px-6 min-h-[65vh] pt-20">
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar */}
         <div className="md:w-1/4 bg-white rounded-lg shadow-md p-6 h-fit">
@@ -322,33 +322,30 @@ const ProfilePage = () => {
 
           <div className="mt-6 border-t pt-4">
             <div
-              className={`py-2 px-3 rounded-md cursor-pointer mb-2 ${
-                selectedSection === "info"
+              className={`py-2 px-3 rounded-md cursor-pointer mb-2 ${selectedSection === "info"
                   ? "bg-red-50 text-red-600"
                   : "hover:bg-gray-50"
-              }`}
+                }`}
               onClick={() => setSelectedSection("info")}
             >
               <UserOutlined className="mr-2" />
               Thông tin cá nhân
             </div>
             <div
-              className={`py-2 px-3 rounded-md cursor-pointer mb-2 ${
-                selectedSection === "password"
+              className={`py-2 px-3 rounded-md cursor-pointer mb-2 ${selectedSection === "password"
                   ? "bg-red-50 text-red-600"
                   : "hover:bg-gray-50"
-              }`}
+                }`}
               onClick={() => setSelectedSection("password")}
             >
               <LockOutlined className="mr-2" />
               Đổi mật khẩu
             </div>
             <div
-              className={`py-2 px-3 rounded-md cursor-pointer mb-2 ${
-                selectedSection === "addresses"
+              className={`py-2 px-3 rounded-md cursor-pointer mb-2 ${selectedSection === "addresses"
                   ? "bg-red-50 text-red-600"
                   : "hover:bg-gray-50"
-              }`}
+                }`}
               onClick={() => setSelectedSection("addresses")}
             >
               <EnvironmentOutlined className="mr-2" />

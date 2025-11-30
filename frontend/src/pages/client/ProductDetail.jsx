@@ -175,20 +175,19 @@ const ProductDetailPage = () => {
   return (
     <>
       {contextHolder}
-      <div className="container mt-4 mb-20 px-12 mx-auto">
+      <div className="container mt-4 mb-20 px-12 mx-auto pt-20">
         <Breadcrumb>
           <Breadcrumb.Item>
             <Link to="/">Trang chủ</Link>
           </Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link
-              to={`${
-                type === "Đồng Hồ Nam"
+              to={`${type === "Đồng Hồ Nam"
                   ? "/men"
                   : type === "Đồng Hồ Nữ"
-                  ? "/women"
-                  : "/couple"
-              }`}
+                    ? "/women"
+                    : "/couple"
+                }`}
             >
               {type}
             </Link>
@@ -219,9 +218,9 @@ const ProductDetailPage = () => {
             <h2 className="text-4xl text-[#C40D2E] mt-4">
               {dataViewDetail?.price
                 ? dataViewDetail.price.toLocaleString("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  })
+                  style: "currency",
+                  currency: "VND",
+                })
                 : "Đang tải..."}
             </h2>
             <h3 className="text-sm text-[#676767] text-justify mt-4">
@@ -252,9 +251,9 @@ const ProductDetailPage = () => {
               <span className="text-xl text-[#C40D2E] font-bold">
                 {dataViewDetail?.price
                   ? (dataViewDetail.price * quantity).toLocaleString("vi-VN", {
-                      style: "currency",
-                      currency: "VND",
-                    })
+                    style: "currency",
+                    currency: "VND",
+                  })
                   : "Đang tải..."}
               </span>
             </div>

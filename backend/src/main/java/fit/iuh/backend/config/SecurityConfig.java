@@ -61,8 +61,21 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         
+                        // Public endpoints - Coupons
+                        .requestMatchers(HttpMethod.POST, "/api/v1/coupons/validate").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/coupons/valid").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/coupons/active").permitAll()
+                        
+                        // Public endpoints - Reviews
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/reviews/*/helpful").permitAll()
+                        
+                        // Public endpoints - Inventory
+                        .requestMatchers(HttpMethod.GET, "/api/v1/inventory/**").permitAll()
+                        
                         // Public endpoints - Payment callbacks (MoMo return and IPN)
                         .requestMatchers("/api/v1/payments/return", "/api/v1/payments/ipn/**").permitAll()
+                        .requestMatchers("/api/v1/payments/mock-success/**").permitAll()
                         
                         // Swagger/OpenAPI endpoints
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

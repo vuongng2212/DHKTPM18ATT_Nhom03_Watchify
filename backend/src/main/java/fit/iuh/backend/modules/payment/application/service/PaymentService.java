@@ -9,6 +9,8 @@ import fit.iuh.backend.modules.payment.domain.entity.PaymentStatus;
 import fit.iuh.backend.modules.payment.domain.repository.PaymentRepository;
 import fit.iuh.backend.sharedkernel.event.OrderCreatedEvent;
 import fit.iuh.backend.sharedkernel.event.PaymentSuccessEvent;
+import fit.iuh.backend.sharedkernel.event.PaymentCompletedEvent;
+import fit.iuh.backend.sharedkernel.event.PaymentFailedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -80,9 +82,21 @@ public class PaymentService {
 
         paymentRepository.save(payment);
 
-        // Publish success event
+        // Publish old success event (for backward compatibility)
         PaymentSuccessEvent successEvent = new PaymentSuccessEvent(payment.getOrder().getId());
         eventPublisher.publishEvent(successEvent);
+
+        // Publish new PaymentCompletedEvent
+        PaymentCompletedEvent completedEvent = new PaymentCompletedEvent(
+            payment.getId(),
+            payment.getOrder().getId(),
+            payment.getOrder().getUser().getId(),
+            payment.getAmount(),
+            "CASH_ON_DELIVERY",
+            payment.getTransactionId(),
+            LocalDateTime.now()
+        );
+        eventPublisher.publishEvent(completedEvent);
 
         log.info("COD payment success for order: {}", payment.getOrder().getId());
     }
@@ -108,11 +122,36 @@ public class PaymentService {
 
         paymentRepository.save(payment);
 
-        // Publish success event if payment is successful
+        // Publish events based on payment status
         if (status == PaymentStatus.SUCCESS) {
+            // Publish old success event (for backward compatibility)
             PaymentSuccessEvent successEvent = new PaymentSuccessEvent(payment.getOrder().getId());
             eventPublisher.publishEvent(successEvent);
-            log.info("Payment success event published for order: {}", payment.getOrder().getId());
+            
+            // Publish new PaymentCompletedEvent
+            PaymentCompletedEvent completedEvent = new PaymentCompletedEvent(
+                payment.getId(),
+                payment.getOrder().getId(),
+                payment.getOrder().getUser().getId(),
+                payment.getAmount(),
+                payment.getPaymentMethod().toString(),
+                transactionId,
+                LocalDateTime.now()
+            );
+            eventPublisher.publishEvent(completedEvent);
+            
+            log.info("Payment success events published for order: {}", payment.getOrder().getId());
+        } else if (status == PaymentStatus.FAILED) {
+            // Publish PaymentFailedEvent
+            PaymentFailedEvent failedEvent = new PaymentFailedEvent(
+                payment.getId(),
+                payment.getOrder().getId(),
+                payment.getOrder().getUser().getId(),
+                notes != null ? notes : "Payment failed"
+            );
+            eventPublisher.publishEvent(failedEvent);
+            
+            log.info("Payment failed event published for order: {}", payment.getOrder().getId());
         }
 
         log.info("Payment {} updated to status: {}", paymentId, status);

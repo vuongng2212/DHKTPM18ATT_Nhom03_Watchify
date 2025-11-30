@@ -5,6 +5,7 @@ import { Breadcrumb, Button, Col, Input, Rate, Row, Spin } from "antd";
 import { useCurrentApp } from "../../context/app.context";
 import PopularWatches from "../../components/PopularWatches";
 import SkeletonLoader from "../../components/SkeletonLoader";
+import WishlistButton from "../../components/WishlistButton";
 import { items } from "../../data";
 import { addReviewApi, fetchReviewsByProduct } from "../../services/api";
 import useWatchesData from "../../apiservice/useWathes";
@@ -212,9 +213,18 @@ const ProductDetailPage = () => {
           </Col>
 
           <Col span={16}>
-            <h1 className="text-2xl font-bold text-[#676767] text-justify">
-              {dataViewDetail.name}
-            </h1>
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="text-2xl font-bold text-[#676767] text-justify flex-1">
+                {dataViewDetail.name}
+              </h1>
+              {dataViewDetail.id && (
+                <WishlistButton
+                  productId={dataViewDetail.id}
+                  size="large"
+                  showText={true}
+                />
+              )}
+            </div>
             <h2 className="text-4xl text-[#C40D2E] mt-4">
               {dataViewDetail?.price
                 ? dataViewDetail.price.toLocaleString("vi-VN", {

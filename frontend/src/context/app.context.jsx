@@ -2,6 +2,12 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { LoadingOutlined } from "@ant-design/icons";
 import { message, notification, Spin } from "antd";
 import { fetchAccountApi } from "../services/api";
+import { 
+  getUserWishlistApi, 
+  addToWishlistApi, 
+  removeFromWishlistApi,
+  checkInWishlistApi 
+} from "../services/wishlistApi";
 
 const CurrentAppContext = createContext();
 
@@ -11,6 +17,7 @@ export const AppProvider = ({ children }) => {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [carts, setCarts] = useState([]);
   const [favorite, setFavorite] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
   const [dataViewDetail, setDataViewDetail] = useState({});
   const [messageApi, contextHolder] = message.useMessage();
   const [notificationApi, contextNotifiHolder] = notification.useNotification();
@@ -30,6 +37,8 @@ export const AppProvider = ({ children }) => {
         if (res) {
           setUser(res);
           setIsAuthenticated(true);
+          // Load wishlist for authenticated user
+          loadWishlist();
         } else {
           localStorage.removeItem("accessToken");
         }
@@ -109,6 +118,61 @@ export const AppProvider = ({ children }) => {
     setFavorite((prev) => prev.filter((item) => item.id !== productId));
   };
 
+  // Wishlist functions
+  const loadWishlist = async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      const data = await getUserWishlistApi();
+      setWishlist(data || []);
+    } catch (error) {
+      console.error("Error loading wishlist:", error);
+    }
+  };
+
+  const addToWishlist = async (productId) => {
+    if (!isAuthenticated) {
+      messageApi.warning("Please login to add items to wishlist");
+      return false;
+    }
+
+    try {
+      await addToWishlistApi(productId);
+      await loadWishlist(); // Refresh wishlist
+      messageApi.success("Added to wishlist");
+      return true;
+    } catch (error) {
+      console.error("Error adding to wishlist:", error);
+      messageApi.error(error?.response?.data?.message || "Failed to add to wishlist");
+      return false;
+    }
+  };
+
+  const removeFromWishlist = async (productId) => {
+    try {
+      await removeFromWishlistApi(productId);
+      await loadWishlist(); // Refresh wishlist
+      messageApi.success("Removed from wishlist");
+      return true;
+    } catch (error) {
+      console.error("Error removing from wishlist:", error);
+      messageApi.error("Failed to remove from wishlist");
+      return false;
+    }
+  };
+
+  const isInWishlist = (productId) => {
+    return wishlist.some(item => item.product?.id === productId);
+  };
+
+  const toggleWishlistItem = async (productId) => {
+    if (isInWishlist(productId)) {
+      return await removeFromWishlist(productId);
+    } else {
+      return await addToWishlist(productId);
+    }
+  };
+
   return (
     <>
       {contextHolder}
@@ -142,6 +206,13 @@ export const AppProvider = ({ children }) => {
           setFavorite,
           toggleFavorite,
           removeFromFavorite,
+          wishlist,
+          setWishlist,
+          addToWishlist,
+          removeFromWishlist,
+          isInWishlist,
+          toggleWishlistItem,
+          loadWishlist,
           user,
           setUser,
           isAuthenticated,

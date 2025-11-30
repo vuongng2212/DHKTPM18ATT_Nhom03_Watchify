@@ -8,6 +8,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Entity representing an order in the system.
@@ -27,6 +28,19 @@ public class Order extends BaseEntity {
 
     @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount;
+
+    @Column(name = "coupon_id", columnDefinition = "CHAR(36)")
+    private UUID couponId;
+
+    @Column(name = "coupon_code", length = 50)
+    private String couponCode;
+
+    @Column(name = "discount_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Column(name = "final_amount", precision = 15, scale = 2)
+    private BigDecimal finalAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

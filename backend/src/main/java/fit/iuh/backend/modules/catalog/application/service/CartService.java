@@ -112,6 +112,16 @@ public class CartService {
         return mapToDto(cart, items);
     }
 
+    public void clearCart(UUID userId) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseGet(() -> createCartForUser(userId));
+
+        List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
+        
+        // Delete all cart items
+        cartItemRepository.deleteAll(items);
+    }
+
     private CartDto mapToDto(Cart cart, List<CartItem> items) {
         List<CartItemDto> itemDtos = items.stream()
                 .map(this::mapToDto)

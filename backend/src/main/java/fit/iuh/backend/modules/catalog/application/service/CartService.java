@@ -1,15 +1,21 @@
 package fit.iuh.backend.modules.catalog.application.service;
 
+import fit.iuh.backend.modules.catalog.application.dto.CartDto;
+import fit.iuh.backend.modules.catalog.application.dto.CartItemDto;
 import fit.iuh.backend.modules.catalog.domain.entity.Cart;
 import fit.iuh.backend.modules.catalog.domain.entity.CartItem;
 import fit.iuh.backend.modules.catalog.domain.entity.Product;
 import fit.iuh.backend.modules.catalog.domain.repository.ProductRepository;
-import fit.iuh.backend.modules.identity.domain.repository.CartItemRepository;
-import fit.iuh.backend.modules.identity.domain.repository.CartRepository;
+import fit.iuh.backend.modules.catalog.domain.repository.CartItemRepository;
+import fit.iuh.backend.modules.catalog.domain.repository.CartRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,11 +28,11 @@ public class CartService {
 
 
 
-    public Cart getCurrentCart(UUID userId) {
-
-            return cartRepository.findByUserId(userId)
-                    .orElseGet(() -> createCartForUser(userId));
-
+    public CartDto getCurrentCart(UUID userId) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseGet(() -> createCartForUser(userId));
+        List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
+        return mapToDto(cart, items);
     }
 
     private Cart createCartForUser(UUID userId) {
@@ -35,19 +41,22 @@ public class CartService {
     }
 
 
-    public Cart addItemToCart(UUID userId, UUID productId, int quantity) {
-        Cart cart = getCurrentCart(userId);
+    public CartDto addItemToCart(UUID userId, UUID productId, int quantity) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseGet(() -> createCartForUser(userId));
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        // Check if already exists
-        CartItem existing = cart.getItems().stream()
-                .filter(i -> i.getProduct().getId().equals(productId))
-                .findFirst()
-                .orElse(null);
+        List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
 
-        if (existing != null) {
+        // Check if already exists
+        Optional<CartItem> existingOpt = items.stream()
+                .filter(i -> i.getProduct().getId().equals(productId))
+                .findFirst();
+
+        if (existingOpt.isPresent()) {
+            CartItem existing = existingOpt.get();
             existing.setQuantity(existing.getQuantity() + quantity);
             cartItemRepository.save(existing);
         } else {
@@ -57,43 +66,82 @@ public class CartService {
                     .quantity(quantity)
                     .build();
 
-            cart.addItem(newItem);
             cartItemRepository.save(newItem);
+            items.add(newItem);
         }
 
-        return cartRepository.save(cart);
+        return mapToDto(cart, items);
     }
 
-    public Cart updateCartItem(UUID userId, UUID productId, int quantity) {
-        Cart cart = getCurrentCart(userId);
+    public CartDto updateCartItem(UUID userId, UUID productId, int quantity) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseGet(() -> createCartForUser(userId));
 
-        CartItem item = cart.getItems().stream()
+        List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
+
+        CartItem item = items.stream()
                 .filter(i -> i.getProduct().getId().equals(productId))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Product not found in cart"));
 
         if (quantity <= 0) {
-            cart.removeItem(item);
             cartItemRepository.delete(item);
+            items.remove(item);
         } else {
             item.setQuantity(quantity);
             cartItemRepository.save(item);
         }
 
-        return cartRepository.save(cart);
+        return mapToDto(cart, items);
     }
 
-    public Cart deleteCartItem(UUID userId, UUID productId) {
-        Cart cart = getCurrentCart(userId);
+    public CartDto deleteCartItem(UUID userId, UUID productId) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseGet(() -> createCartForUser(userId));
 
-        CartItem item = cart.getItems().stream()
+        List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
+
+        CartItem item = items.stream()
                 .filter(i -> i.getProduct().getId().equals(productId))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Product not found in cart"));
 
-        cart.removeItem(item);
         cartItemRepository.delete(item);
+        items.remove(item);
 
-        return cartRepository.save(cart);
+        return mapToDto(cart, items);
+    }
+
+    private CartDto mapToDto(Cart cart, List<CartItem> items) {
+        List<CartItemDto> itemDtos = items.stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+
+        BigDecimal totalPrice = itemDtos.stream()
+                .map(CartItemDto::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return CartDto.builder()
+                .id(cart.getId())
+                .userId(cart.getUserId())
+                .items(itemDtos)
+                .totalPrice(totalPrice)
+                .totalItems(itemDtos.size())
+                .build();
+    }
+
+    private CartItemDto mapToDto(CartItem cartItem) {
+        Product product = cartItem.getProduct();
+        BigDecimal subtotal = product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+
+        return CartItemDto.builder()
+                .id(cartItem.getId())
+                .productId(product.getId())
+                .productName(product.getName())
+                .productImage(null) // TODO: Implement image fetching from ProductImage repository
+                .price(product.getPrice())
+                .quantity(cartItem.getQuantity())
+                .subtotal(subtotal)
+                .build();
     }
 }

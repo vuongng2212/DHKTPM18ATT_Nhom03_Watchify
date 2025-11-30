@@ -1,4 +1,4 @@
-package fit.iuh.backend.modules.identity.domain.repository;
+package fit.iuh.backend.modules.catalog.domain.repository;
 
 import fit.iuh.backend.modules.catalog.domain.entity.Cart;
 import org.springframework.data.jpa.repository.JpaRepository;

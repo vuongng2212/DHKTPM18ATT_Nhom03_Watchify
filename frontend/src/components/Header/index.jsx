@@ -25,6 +25,7 @@ const deleteCookie = (name) => {
 const Header = () => {
   const {
     favorite,
+    wishlistCount,
     user,
     carts,
     setCarts,
@@ -196,7 +197,7 @@ const Header = () => {
                 <Badge count={carts.length ?? 0} size={'small'} showZero><img width="26px" src={cartIcon} alt="Cart Icon" /></Badge>
               </button>
               <button onClick={() => navigate('/favorite')} className="flex items-center hover:text-red-500 cursor-pointer transition-all duration-300">
-                <Badge count={favorite.length ?? 0} size={'small'} showZero><img width="26px" src={heartIcon} alt="Heart Icon" /></Badge>
+                <Badge count={wishlistCount ?? 0} size={'small'} showZero><img width="26px" src={heartIcon} alt="Heart Icon" /></Badge>
               </button>
               {isAuthenticated && user ? (
                 <Dropdown menu={{ items }} placement="bottom">

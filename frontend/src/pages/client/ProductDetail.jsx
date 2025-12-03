@@ -38,7 +38,6 @@ const ProductDetailPage = () => {
     addToCart,
     messageApi,
     contextHolder,
-    user,
     isAuthenticated,
   } = useCurrentApp();
 
@@ -111,28 +110,28 @@ const ProductDetailPage = () => {
       });
   };
 
-  const handleAddToCart = () => {
-    if (!user) {
-      messageApi.open({
-        type: "error",
-        content: "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!",
-      });
-      return;
-    }
-
+  const handleAddToCart = async () => {
     if (dataViewDetail) {
-      addToCart(
-        {
-          ...dataViewDetail,
-          id: dataViewDetail.id,
-        },
-        quantity
-      );
+      try {
+        await addToCart(
+          {
+            ...dataViewDetail,
+            id: dataViewDetail.id,
+          },
+          quantity
+        );
 
-      messageApi.open({
-        type: "success",
-        content: "Thêm vào giỏ hàng thành công!",
-      });
+        messageApi.open({
+          type: "success",
+          content: "Thêm vào giỏ hàng thành công!",
+        });
+      } catch (error) {
+        console.error("Error adding to cart:", error);
+        messageApi.open({
+          type: "error",
+          content: "Không thể thêm sản phẩm vào giỏ hàng!",
+        });
+      }
     }
   };
 

@@ -46,21 +46,59 @@ export const resetPasswordApi = ({ email, matKhau }) => {
 };
 
 export const getUsersApi = (page = 1, size = 10, search = "") => {
+  console.log(`📥 [API] Fetching users - page: ${page}, size: ${size}, search: "${search}"`);
   return axiosUser.get(
-    `/api/users?page=${page - 1}&size=${size}&search=${search}`
-  );
+    `/api/v1/users?page=${page - 1}&size=${size}&search=${search || ""}`
+  )
+    .then(response => {
+      console.log(`✅ [API] Users fetched successfully:`, response);
+      console.log(`📊 [API] Number of users: ${response.users?.length || 0}`);
+      return response;
+    })
+    .catch(error => {
+      console.error(`❌ [API] Failed to fetch users:`, error);
+      console.error(`📍 [API] Error response:`, error.response);
+      throw error;
+    });
 };
 
 export const lockUserApi = (userId) => {
-  return axiosUser.put(`/api/users/${userId}/lock`);
+  console.log(`📤 [API] Locking user ${userId}`);
+  return axiosUser.put(`/api/v1/users/${userId}/lock`)
+    .then(response => {
+      console.log(`✅ [API] User locked successfully`);
+      return response;
+    })
+    .catch(error => {
+      console.error(`❌ [API] Failed to lock user:`, error);
+      throw error;
+    });
 };
 
 export const unlockUserApi = (userId) => {
-  return axiosUser.put(`/api/users/${userId}/unlock`);
+  console.log(`📤 [API] Unlocking user ${userId}`);
+  return axiosUser.put(`/api/v1/users/${userId}/unlock`)
+    .then(response => {
+      console.log(`✅ [API] User unlocked successfully`);
+      return response;
+    })
+    .catch(error => {
+      console.error(`❌ [API] Failed to unlock user:`, error);
+      throw error;
+    });
 };
 
 export const toggleUserLockApi = (userId) => {
-  return axiosUser.put(`/api/users/${userId}/toggle-lock`);
+  console.log(`📤 [API] Toggling lock for user ${userId}`);
+  return axiosUser.put(`/api/v1/users/${userId}/toggle-lock`)
+    .then(response => {
+      console.log(`✅ [API] User lock toggled successfully:`, response);
+      return response;
+    })
+    .catch(error => {
+      console.error(`❌ [API] Failed to toggle user lock:`, error);
+      throw error;
+    });
 };
 
 export const getUserAddressesApi = () => {
@@ -91,6 +129,20 @@ export const updateProfileApi = (userId, data) => {
   return axiosUser.put(`/api/v1/users/${userId}`, data);
 };
 
+export const updateUserApi = (data) => {
+  const { id, ...updateData } = data;
+  console.log(`📤 [API] Updating user ${id}:`, updateData);
+  return axiosUser.put(`/api/v1/users/${id}`, updateData)
+    .then(response => {
+      console.log(`✅ [API] User updated successfully:`, response);
+      return response;
+    })
+    .catch(error => {
+      console.error(`❌ [API] Failed to update user:`, error);
+      throw error;
+    });
+};
+
 export const changePasswordApi = (data) => {
   return axiosUser.put("/api/v1/users/changePassword", data);
 };
@@ -108,11 +160,69 @@ export const updateOrderStatusApi = (orderId, trangThaiDonHang) => {
 };
 
 export const fetchReviewsByProduct = (productId) => {
-  return axiosReview.get(`/api/reviews/product/${productId}`);
+  console.log(`📥 [API] Fetching reviews for product ID: ${productId}`);
+  console.log(`📍 [API] Endpoint: /api/v1/reviews/products/${productId}`);
+  return axiosReview.get(`/api/v1/reviews/products/${productId}`)
+    .then(response => {
+      console.log(`✅ [API] Fetched reviews successfully:`, response);
+      console.log(`📊 [API] Number of reviews: ${response?.length || 0}`);
+      console.log(`📋 [API] Reviews data:`, response);
+      return response;
+    })
+    .catch(error => {
+      console.error(`❌ [API] Failed to fetch reviews:`, error);
+      console.error(`📍 [API] Error response:`, error.response);
+      console.error(`📍 [API] Error message:`, error.message);
+      throw error;
+    });
+};
+
+export const getProductRatingApi = (productId) => {
+  return axiosReview.get(`/api/v1/reviews/products/${productId}/rating`);
 };
 
 export const addReviewApi = (data) => {
-  return axiosReview.post("/api/reviews/add", data);
+  console.log(`📤 [API] Submitting review`);
+  console.log(`📍 [API] Endpoint: POST /api/v1/reviews`);
+  console.log(`📦 [API] Review data:`, data);
+  return axiosReview.post("/api/v1/reviews", data)
+    .then(response => {
+      console.log(`✅ [API] Review submitted successfully:`, response);
+      console.log(`📊 [API] Response data:`, response);
+      return response;
+    })
+    .catch(error => {
+      console.error(`❌ [API] Failed to submit review:`, error);
+      console.error(`📍 [API] Error response:`, error.response);
+      console.error(`📍 [API] Error data:`, error.response?.data);
+      console.error(`📍 [API] Error message:`, error.message);
+      throw error;
+    });
+};
+
+export const getMyReviewsApi = () => {
+  return axiosReview.get("/api/v1/reviews/me");
+};
+
+export const markReviewHelpfulApi = (reviewId) => {
+  return axiosReview.post(`/api/v1/reviews/${reviewId}/helpful`);
+};
+
+// Admin review APIs
+export const getAllReviewsApi = () => {
+  return axiosReview.get("/api/v1/reviews/all");
+};
+
+export const getPendingReviewsApi = () => {
+  return axiosReview.get("/api/v1/reviews/pending");
+};
+
+export const approveReviewApi = (reviewId) => {
+  return axiosReview.put(`/api/v1/reviews/${reviewId}/approve`);
+};
+
+export const rejectReviewApi = (reviewId) => {
+  return axiosReview.put(`/api/v1/reviews/${reviewId}/reject`);
 };
 
 export const chatbotApi = (data) => {
@@ -120,7 +230,16 @@ export const chatbotApi = (data) => {
 };
 
 export const getRolesApi = () => {
-  return axiosUser.get("/api/roles");
+  console.log(`📥 [API] Fetching roles`);
+  return axiosUser.get("/api/v1/roles")
+    .then(response => {
+      console.log(`✅ [API] Roles fetched:`, response);
+      return response;
+    })
+    .catch(error => {
+      console.error(`❌ [API] Failed to fetch roles:`, error);
+      throw error;
+    });
 };
 
 export const uploadAvatarApi = (file) => {

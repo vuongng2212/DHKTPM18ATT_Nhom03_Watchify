@@ -21,32 +21,9 @@ import {
   BarChartOutlined,
 } from '@ant-design/icons';
 import { Bar, Line, Doughnut, Pie } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from 'chart.js';
+import '../../../utils/chartConfig'; // Import Chart.js config
 import { getAllOrdersApi } from '../../../services/api';
 import dayjs from 'dayjs';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-);
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;

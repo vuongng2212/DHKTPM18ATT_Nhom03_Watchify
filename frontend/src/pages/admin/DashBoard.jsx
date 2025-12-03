@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Bar, Doughnut } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from "chart.js";
+import "../../utils/chartConfig"; // Import Chart.js config
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, Navigate } from "react-router-dom";
@@ -32,25 +23,13 @@ import {
 import { Drawer, Spin, Modal, Form, Input, Select } from "antd";
 import { useCurrentApp } from "../../context/app.context";
 import { MinusOutlined, PlusOutlined } from "@ant-design/icons";
-
-// Đăng ký các thành phần Chart.js
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-);
+import ReviewsManagement from "./ReviewsManagement/ReviewsManagement";
+import Reports from "./Analytics/Reports";
 
 const Dashboard = () => {
   const { user, isAuthenticated } = useCurrentApp();
-
-  // Check if user is authenticated and has admin role
-  if (!isAuthenticated || !user || !user.roles?.includes('ROLE_ADMIN')) {
-    return <Navigate to="/" />;
-  }
+  const navigate = useNavigate();
+  const { messageApi } = useCurrentApp();
 
   const [activeTab, setActiveTab] = useState("overview");
   const [searchTerm, setSearchTerm] = useState("");
@@ -97,11 +76,7 @@ const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [roles, setRoles] = useState([]);
 
-  const { messageApi } = useCurrentApp();
-
   const itemsPerPage = 5;
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -298,6 +273,7 @@ const Dashboard = () => {
     { label: "Thương Hiệu", value: "brands", icon: "📦" },
     { label: "Đơn hàng", value: "orders", icon: "📦" },
     { label: "Người dùng", value: "customers", icon: "👥" },
+    { label: "Đánh giá", value: "reviews", icon: "⭐" },
     { label: "Thống kê", value: "analytics", icon: "📈" },
   ];
 
@@ -458,11 +434,12 @@ const Dashboard = () => {
     try {
       const res = await getUsersApi(page, 5, search);
       console.log("Users API Response:", res);
-      if (res.status && res.data) {
-        setUsers(res.data.users);
-        setUsersTotalPages(res.data.pagination.totalPages);
-        setTotalUsers(res.data.pagination.totalUsers);
-        console.log("DashBoard: Users loaded:", res.data.users.length);
+      // Backend response already unwrapped by axios interceptor
+      if (res && res.users) {
+        setUsers(res.users);
+        setUsersTotalPages(res.pagination?.totalPages || 1);
+        setTotalUsers(res.pagination?.totalUsers || 0);
+        console.log("DashBoard: Users loaded:", res.users.length);
       } else {
         setUsers([]);
         console.log("DashBoard: No users data");
@@ -484,24 +461,42 @@ const Dashboard = () => {
   const fetchRoles = async () => {
     try {
       const res = await getRolesApi();
-      console.log("res:", res);
+      console.log("Roles API Response:", res);
 
-      if (res.status && res.data) setRoles(res.data);
-      else setRoles([]);
-    } catch {
-      setRoles([]);
+      // Backend response already unwrapped by axios interceptor
+      if (res && Array.isArray(res)) {
+        setRoles(res);
+      } else if (res && res.roles) {
+        setRoles(res.roles);
+      } else {
+        // Fallback to default roles if backend not available
+        console.warn("Roles API not available, using default roles");
+        setRoles([
+          { id: 1, tenQuyen: "ADMIN" },
+          { id: 2, tenQuyen: "USER" },
+          { id: 3, tenQuyen: "CUSTOMER" }
+        ]);
+      }
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      // Fallback to default roles
+      setRoles([
+        { id: 1, tenQuyen: "ADMIN" },
+        { id: 2, tenQuyen: "USER" },
+        { id: 3, tenQuyen: "CUSTOMER" }
+      ]);
     }
   };
 
-  console.log(roles);
+  console.log("Current roles:", roles);
 
   // Hàm mở modal sửa user
   const handleEditUser = (user) => {
     setEditUserForm({
-      _id: user._id,
-      tenNguoiDung: user.tenNguoiDung || "",
+      _id: user.id, // Backend uses 'id' not '_id'
+      tenNguoiDung: user.tenNguoiDung || user.fullName || "",
       gioiTinh: user.gioiTinh || "",
-      sdt: user.sdt || "",
+      sdt: user.phone || "", // Backend uses 'phone' not 'sdt'
       quyen: user.quyen?.tenQuyen || "",
     });
 
@@ -514,53 +509,40 @@ const Dashboard = () => {
     try {
       const { _id, ...updateData } = editUserForm;
       const res = await updateUserApi({ id: _id, ...updateData });
-      if (res.status) {
-        setEditUserModalOpen(false);
-        await fetchUsers(usersPage, userSearch);
-        messageApi.open({
-          type: "success",
-          content: "Cập nhật người dùng thành công!",
-        });
-      } else {
-        messageApi.open({
-          type: "error",
-          content: res.message || "Cập nhật thất bại!",
-        });
-      }
-    } catch {
-      messageApi.open({ type: "error", content: "Cập nhật thất bại!" });
+      // Response already unwrapped by axios interceptor
+      setEditUserModalOpen(false);
+      await fetchUsers(usersPage, userSearch);
+      messageApi.open({
+        type: "success",
+        content: "Cập nhật người dùng thành công!",
+      });
+    } catch (error) {
+      messageApi.open({ 
+        type: "error", 
+        content: error.response?.data?.message || "Cập nhật thất bại!" 
+      });
     } finally {
       setEditUserLoading(false);
     }
   };
 
-  const handleLockUser = async (userId, isActive) => {
+  const handleLockUser = async (userId, shouldUnlock) => {
     try {
-      const res = await updateUserApi({ id: userId, isActive });
-      if (res.status) {
-        messageApi.open({
-          type: "success",
-          content: isActive
-            ? "Mở khóa tài khoản thành công!"
-            : "Khóa tài khoản thành công!",
-        });
-        await fetchUsers(usersPage, userSearch);
-      } else {
-        messageApi.open({
-          type: "error",
-          content:
-            res.message ||
-            (isActive
-              ? "Mở khóa tài khoản thất bại!"
-              : "Khóa tài khoản thất bại!"),
-        });
-      }
-    } catch {
+      // Backend uses separate lock/unlock endpoints or locked field
+      const res = await updateUserApi({ id: userId, locked: !shouldUnlock });
+      messageApi.open({
+        type: "success",
+        content: shouldUnlock
+          ? "Mở khóa tài khoản thành công!"
+          : "Khóa tài khoản thành công!",
+      });
+      await fetchUsers(usersPage, userSearch);
+    } catch (error) {
       messageApi.open({
         type: "error",
-        content: isActive
+        content: error.response?.data?.message || (shouldUnlock
           ? "Có lỗi khi mở khóa tài khoản!"
-          : "Có lỗi xảy ra khi khóa tài khoản!",
+          : "Có lỗi xảy ra khi khóa tài khoản!"),
       });
     }
   };
@@ -578,6 +560,11 @@ const Dashboard = () => {
     0
   );
   console.log("DashBoard: Calculated totalRevenue:", totalRevenue, "from orders:", orders.length);
+
+  // Check if user is authenticated and has admin role
+  if (!isAuthenticated || !user || !user.roles?.includes('ROLE_ADMIN')) {
+    return <Navigate to="/" />;
+  }
 
   return (
     <div className="min-h-screen flex font-roboto bg-gray-100">
@@ -1430,18 +1417,18 @@ const Dashboard = () => {
                       <tbody>
                         {users.map((user, index) => (
                           <tr
-                            key={user._id}
+                            key={user.id}
                             className="border-b hover:bg-gray-50"
                           >
                             <td className="p-3">
-                              {(usersPage - 1) * itemsPerPage + index + 1}
+                              {(usersPage - 1) * 5 + index + 1}
                             </td>
-                            <td className="p-3">{user.tenNguoiDung || "-"}</td>
+                            <td className="p-3">{user.tenNguoiDung || user.fullName || "-"}</td>
                             <td className="p-3">{user.email}</td>
                             <td className="p-3">{user.gioiTinh || "-"}</td>
-                            <td className="p-3">{user.sdt}</td>
+                            <td className="p-3">{user.phone || user.sdt || "-"}</td>
                             <td className="p-3">
-                              {user.isActive ? "Hoạt động" : "Khóa"}
+                              {user.locked ? "Khóa" : "Hoạt động"}
                             </td>
                             <td className="p-3">
                               <button
@@ -1452,15 +1439,15 @@ const Dashboard = () => {
                               </button>
                               <button
                                 className={`px-3 py-1 rounded font-medium cursor-pointer text-white ${
-                                  user.isActive
-                                    ? "bg-red-500 hover:bg-red-600"
-                                    : "bg-blue-500 hover:bg-blue-600"
+                                  user.locked
+                                    ? "bg-blue-500 hover:bg-blue-600"
+                                    : "bg-red-500 hover:bg-red-600"
                                 }`}
                                 onClick={() =>
-                                  handleLockUser(user._id, !user.isActive)
+                                  handleLockUser(user.id, user.locked)
                                 }
                               >
-                                {user.isActive ? "Khóa" : "Mở khóa"}
+                                {user.locked ? "Mở khóa" : "Khóa"}
                               </button>
                             </td>
                           </tr>
@@ -1501,107 +1488,19 @@ const Dashboard = () => {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                {console.log("DashBoard: Rendering analytics tab")}
-                <h2 className="text-2xl font-semibold mb-6 text-gray-800 select-none">
-                  Thống kê
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <motion.div
-                    className="bg-white p-6 rounded-lg shadow-md"
-                    variants={chartVariants}
-                    initial="hidden"
-                    animate="visible"
-                  >
-                    <h3 className="text-lg font-semibold mb-4">
-                      Doanh thu theo tháng
-                    </h3>
-                    <div className="h-64">
-                      <Bar
-                        data={{
-                          labels: [
-                            "Tháng 1",
-                            "Tháng 2",
-                            "Tháng 3",
-                            "Tháng 4",
-                            "Tháng 5",
-                          ],
-                          datasets: [
-                            {
-                              label: "Doanh thu (triệu đồng)",
-                              data: [500, 600, 700, 650, 800],
-                              backgroundColor: "#A61C28",
-                              borderColor: "#A61C28",
-                              borderWidth: 1,
-                            },
-                          ],
-                        }}
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          scales: {
-                            x: { title: { display: true, text: "Tháng" } },
-                            y: {
-                              title: {
-                                display: true,
-                                text: "Doanh thu (triệu đồng)",
-                              },
-                              beginAtZero: true,
-                            },
-                          },
-                          animation: {
-                            duration: 1000,
-                            easing: "easeOutQuart",
-                          },
-                        }}
-                      />
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    className="bg-white p-6 rounded-lg shadow-md"
-                    variants={chartVariants}
-                    initial="hidden"
-                    animate="visible"
-                  >
-                    <h3 className="text-lg font-semibold mb-4">
-                      Sản phẩm bán chạy
-                    </h3>
-                    <div className="h-64 flex items-center justify-center">
-                      <div className="w-1/2">
-                        <Doughnut
-                          data={{
-                            labels: [
-                              "Đồng hồ Nam 1",
-                              "Đồng hồ Rolex 33",
-                              "Đồng hồ Cặp 1",
-                            ],
-                            datasets: [
-                              {
-                                data: [40, 35, 25],
-                                backgroundColor: [
-                                  "#A61C28",
-                                  "#D4AF37",
-                                  "#E5E7EB",
-                                ],
-                                borderWidth: 1,
-                              },
-                            ],
-                          }}
-                          options={{
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                              legend: { position: "bottom" },
-                            },
-                            animation: {
-                              duration: 1000,
-                              easing: "easeOutQuart",
-                            },
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
+                <Reports />
+              </motion.div>
+            )}
+
+            {activeTab === "reviews" && (
+              <motion.div
+                key="reviews"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ReviewsManagement />
               </motion.div>
             )}
           </AnimatePresence>
@@ -1862,7 +1761,7 @@ const Dashboard = () => {
                 >
                   {roles.map((role) => {
                     return (
-                      <Select.Option key={role._id} value={role._id}>
+                      <Select.Option key={role.id || role._id} value={role.tenQuyen}>
                         {role.tenQuyen}
                       </Select.Option>
                     );

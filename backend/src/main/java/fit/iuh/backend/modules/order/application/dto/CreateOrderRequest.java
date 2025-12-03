@@ -2,9 +2,9 @@ package fit.iuh.backend.modules.order.application.dto;
 
 import fit.iuh.backend.modules.order.domain.entity.PaymentMethod;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import jakarta.validation.constraints.NotNull;
 
@@ -14,7 +14,7 @@ import java.util.List;
  * DTO for creating an order (mock cart data).
  */
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateOrderRequest {

@@ -429,31 +429,57 @@ const Dashboard = () => {
   };
 
   const fetchUsers = async (page = usersPage, search = userSearch) => {
-    console.log("DashBoard: Starting fetchUsers, page:", page, "search:", search);
+    console.log("=== FETCH USERS START ===");
+    console.log("DashBoard: Starting fetchUsers, page:", page, "size: 5, search:", search);
+    console.log("Current users state:", users.length);
     setUsersLoading(true);
     try {
+      console.log("Calling getUsersApi...");
       const res = await getUsersApi(page, 5, search);
-      console.log("Users API Response:", res);
+      console.log("✅ Users API Response received:", res);
+      console.log("Response type:", typeof res);
+      console.log("Response keys:", res ? Object.keys(res) : "null");
+      
       // Backend response already unwrapped by axios interceptor
       if (res && res.users) {
+        console.log("✅ Found users array:", res.users);
+        console.log("Number of users:", res.users.length);
+        console.log("First user:", res.users[0]);
+        console.log("Pagination:", res.pagination);
+        
         setUsers(res.users);
         setUsersTotalPages(res.pagination?.totalPages || 1);
         setTotalUsers(res.pagination?.totalUsers || 0);
-        console.log("DashBoard: Users loaded:", res.users.length);
+        console.log("✅ State updated - Users:", res.users.length);
       } else {
+        console.warn("⚠️ No users data in response");
+        console.log("Response structure:", JSON.stringify(res, null, 2));
         setUsers([]);
-        console.log("DashBoard: No users data");
       }
     } catch (err) {
-      console.log("Fetch Users Error:", err);
+      console.error("❌ Fetch Users Error:", err);
+      console.error("Error message:", err.message);
+      console.error("Error response:", err.response);
+      console.error("Error response data:", err.response?.data);
       setUsers([]);
     } finally {
       setUsersLoading(false);
+      console.log("=== FETCH USERS END ===");
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    console.log("=== USERS TAB EFFECT TRIGGERED ===");
+    console.log("Active tab:", activeTab);
+    console.log("Users page:", usersPage);
+    console.log("User search:", userSearch);
+    
+    if (activeTab === "customers") {
+      console.log("Fetching users because tab is 'customers'");
+      fetchUsers();
+    } else {
+      console.log("Not fetching users - active tab is:", activeTab);
+    }
     // eslint-disable-next-line
   }, [activeTab, usersPage, userSearch]);
 
@@ -1371,7 +1397,12 @@ const Dashboard = () => {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                {console.log("DashBoard: Rendering customers tab")}
+                {console.log("=== RENDERING CUSTOMERS TAB ===")}
+                {console.log("Users array:", users)}
+                {console.log("Users length:", users.length)}
+                {console.log("Users loading:", usersLoading)}
+                {console.log("Users page:", usersPage)}
+                {console.log("Total users:", totalUsers)}
                 <h2 className="text-2xl font-semibold mb-6 text-gray-800 select-none">
                   Quản lý người dùng
                 </h2>
@@ -1401,6 +1432,14 @@ const Dashboard = () => {
                         </tr>
                       </tbody>
                     </table>
+                  ) : users.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">
+                      <p className="text-lg mb-2">Không có người dùng nào</p>
+                      <p className="text-sm">
+                        {userSearch ? `Không tìm thấy kết quả cho "${userSearch}"` : "Hệ thống chưa có người dùng"}
+                      </p>
+                      {console.log("⚠️ Displaying 'no users' message")}
+                    </div>
                   ) : (
                     <table className="min-w-full">
                       <thead className="bg-red-700 text-white">
@@ -1415,7 +1454,10 @@ const Dashboard = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {users.map((user, index) => (
+                        {console.log("📋 Rendering users table with", users.length, "users")}
+                        {users.map((user, index) => {
+                          console.log(`Rendering user ${index}:`, user);
+                          return (
                           <tr
                             key={user.id}
                             className="border-b hover:bg-gray-50"
@@ -1451,7 +1493,8 @@ const Dashboard = () => {
                               </button>
                             </td>
                           </tr>
-                        ))}
+                        );
+                        })}
                       </tbody>
                     </table>
                   )}

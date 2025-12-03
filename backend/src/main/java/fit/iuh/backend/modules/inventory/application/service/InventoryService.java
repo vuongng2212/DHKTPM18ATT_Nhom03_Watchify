@@ -150,6 +150,78 @@ public class InventoryService {
     }
 
     /**
+     * Reserve stock for an order (used by InventoryEventListener)
+     * Returns the inventory ID if successful
+     *
+     * @param productId Product ID
+     * @param quantity Quantity to reserve
+     * @param orderId Order ID for tracking
+     * @return Inventory UUID
+     */
+    @Transactional
+    public String reserveStock(UUID productId, Integer quantity, UUID orderId) {
+        log.info("Reserving {} units of product {} for order {}", quantity, productId, orderId);
+        
+        Inventory inventory = inventoryRepository.findByProductId(productId)
+            .orElseThrow(() -> new ResourceNotFoundException("Inventory not found for product: " + productId));
+
+        // Check if enough stock available
+        if (inventory.getAvailableQuantity() < quantity) {
+            throw new RuntimeException("Insufficient stock for product " + productId + 
+                ". Available: " + inventory.getAvailableQuantity() + ", Requested: " + quantity);
+        }
+
+        // Reserve the stock
+        boolean reserved = reserveQuantity(productId, quantity);
+        if (!reserved) {
+            throw new RuntimeException("Failed to reserve stock for product: " + productId);
+        }
+
+        log.info("Successfully reserved {} units of product {} for order {}", quantity, productId, orderId);
+        return inventory.getId();
+    }
+
+    /**
+     * Confirm reservation after payment success (deduct from actual quantity)
+     *
+     * @param productId Product ID
+     * @param quantity Quantity to confirm
+     * @param orderId Order ID for tracking
+     */
+    @Transactional
+    public void confirmReservation(UUID productId, Integer quantity, UUID orderId) {
+        log.info("Confirming reservation of {} units of product {} for order {}", quantity, productId, orderId);
+        
+        boolean confirmed = confirmReservation(productId, quantity);
+        if (!confirmed) {
+            throw new RuntimeException("Failed to confirm reservation for product: " + productId);
+        }
+
+        log.info("Successfully confirmed reservation of {} units of product {} for order {}", 
+            quantity, productId, orderId);
+    }
+
+    /**
+     * Release reserved stock (used when payment fails or order is cancelled)
+     *
+     * @param productId Product ID
+     * @param quantity Quantity to release
+     * @param orderId Order ID for tracking
+     */
+    @Transactional
+    public void releaseReservedStock(UUID productId, Integer quantity, UUID orderId) {
+        log.info("Releasing reserved {} units of product {} for order {}", quantity, productId, orderId);
+        
+        boolean released = releaseQuantity(productId, quantity);
+        if (!released) {
+            log.error("Failed to release reserved stock for product {}", productId);
+            throw new RuntimeException("Failed to release reserved stock for product: " + productId);
+        }
+
+        log.info("Successfully released {} units of product {} for order {}", quantity, productId, orderId);
+    }
+
+    /**
      * Handle OrderCreatedEvent: Reserve stock for order items
      */
     @EventListener

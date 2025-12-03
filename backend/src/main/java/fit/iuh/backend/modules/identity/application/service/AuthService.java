@@ -28,6 +28,7 @@ import fit.iuh.backend.modules.identity.domain.entity.UserStatus;
 import fit.iuh.backend.modules.identity.domain.repository.RefreshTokenRepository;
 import fit.iuh.backend.modules.identity.domain.repository.RoleRepository;
 import fit.iuh.backend.modules.identity.domain.repository.UserRepository;
+import fit.iuh.backend.sharedkernel.exception.AccountLockedException;
 import fit.iuh.backend.sharedkernel.exception.DuplicateResourceException;
 import fit.iuh.backend.sharedkernel.exception.InvalidCredentialsException;
 import fit.iuh.backend.sharedkernel.exception.ResourceNotFoundException;
@@ -118,6 +119,16 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         log.info("User attempting to login with email: {}", request.getEmail());
 
+        // Check if account exists and is locked BEFORE authentication
+        // This prevents password validation for locked accounts
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElse(null);
+        
+        if (user != null && user.getStatus() == UserStatus.BANNED) {
+            log.warn("Login attempt denied for locked account: {}", request.getEmail());
+            throw new AccountLockedException();
+        }
+
         try {
             // Authenticate user
             Authentication authentication = authenticationManager.authenticate(
@@ -130,9 +141,11 @@ public class AuthService {
             // Set authentication in security context
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Get user details
-            User user = userRepository.findByEmail(request.getEmail())
-                    .orElseThrow(() -> new ResourceNotFoundException("User", "email", request.getEmail()));
+            // Get user details (should exist after successful authentication)
+            if (user == null) {
+                user = userRepository.findByEmail(request.getEmail())
+                        .orElseThrow(() -> new ResourceNotFoundException("User", "email", request.getEmail()));
+            }
 
             // Generate JWT token
             String token = jwtTokenProvider.generateToken(authentication);

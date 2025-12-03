@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { HeartOutlined, HeartFilled } from "@ant-design/icons";
 import { useCurrentApp } from "../../context/app.context";
 import { addAccessHistoryApi } from "../../services/api";
+import WishlistButton from "../WishlistButton";
 
 const PopularWatches = ({ watches, title, mx, px }) => {
-  const { favorite, toggleFavorite, user } = useCurrentApp();
+  const { user } = useCurrentApp();
   const navigate = useNavigate();
 
   const handleViewDetail = (watch) => {
@@ -12,10 +12,6 @@ const PopularWatches = ({ watches, title, mx, px }) => {
       addAccessHistoryApi(watch.id || watch._id);
     }
     navigate(`/product/${watch.id || watch._id}`);
-  };
-
-  const isFavorite = (id) => {
-    return favorite.some((item) => (item.id ? item.id : item._id) === id);
   };
 
   return (
@@ -48,21 +44,19 @@ const PopularWatches = ({ watches, title, mx, px }) => {
                 <span className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-red-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md animate-bounce">Hot</span>
               )}
 
-              <button
-                aria-label={isFavorite(watch.id || watch._id) ? 'Bỏ yêu thích' : 'Thêm yêu thích'}
-                className={`absolute top-3 right-3 text-2xl p-1 rounded-full transition-colors duration-200 focus:outline-none shadow ${isFavorite(watch.id || watch._id) ? 'text-red-500 bg-white/90' : 'text-gray-600 bg-white/80'} group-hover:scale-110`}
+              <div
+                className="absolute top-3 right-3"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  toggleFavorite(watch);
                 }}
               >
-                {isFavorite(watch.id || watch._id) ? (
-                  <HeartFilled />
-                ) : (
-                  <HeartOutlined />
-                )}
-              </button>
+                <WishlistButton
+                  productId={watch.id || watch._id}
+                  size="default"
+                  showText={false}
+                />
+              </div>
             </div>
 
             <div className="p-4 text-center flex flex-col gap-1">

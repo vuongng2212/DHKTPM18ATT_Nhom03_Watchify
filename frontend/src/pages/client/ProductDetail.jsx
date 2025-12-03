@@ -5,6 +5,7 @@ import { Breadcrumb, Button, Col, Input, Rate, Row, Spin } from "antd";
 import { useCurrentApp } from "../../context/app.context";
 import PopularWatches from "../../components/PopularWatches";
 import SkeletonLoader from "../../components/SkeletonLoader";
+import WishlistButton from "../../components/WishlistButton";
 import { items } from "../../data";
 import { addReviewApi, fetchReviewsByProduct } from "../../services/api";
 import useWatchesData from "../../apiservice/useWathes";
@@ -37,7 +38,6 @@ const ProductDetailPage = () => {
     addToCart,
     messageApi,
     contextHolder,
-    user,
     isAuthenticated,
   } = useCurrentApp();
 
@@ -110,28 +110,28 @@ const ProductDetailPage = () => {
       });
   };
 
-  const handleAddToCart = () => {
-    if (!user) {
-      messageApi.open({
-        type: "error",
-        content: "Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!",
-      });
-      return;
-    }
-
+  const handleAddToCart = async () => {
     if (dataViewDetail) {
-      addToCart(
-        {
-          ...dataViewDetail,
-          id: dataViewDetail.id,
-        },
-        quantity
-      );
+      try {
+        await addToCart(
+          {
+            ...dataViewDetail,
+            id: dataViewDetail.id,
+          },
+          quantity
+        );
 
-      messageApi.open({
-        type: "success",
-        content: "Thêm vào giỏ hàng thành công!",
-      });
+        messageApi.open({
+          type: "success",
+          content: "Thêm vào giỏ hàng thành công!",
+        });
+      } catch (error) {
+        console.error("Error adding to cart:", error);
+        messageApi.open({
+          type: "error",
+          content: "Không thể thêm sản phẩm vào giỏ hàng!",
+        });
+      }
     }
   };
 
@@ -212,9 +212,18 @@ const ProductDetailPage = () => {
           </Col>
 
           <Col span={16}>
-            <h1 className="text-2xl font-bold text-[#676767] text-justify">
-              {dataViewDetail.name}
-            </h1>
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="text-2xl font-bold text-[#676767] text-justify flex-1">
+                {dataViewDetail.name}
+              </h1>
+              {dataViewDetail.id && (
+                <WishlistButton
+                  productId={dataViewDetail.id}
+                  size="large"
+                  showText={true}
+                />
+              )}
+            </div>
             <h2 className="text-4xl text-[#C40D2E] mt-4">
               {dataViewDetail?.price
                 ? dataViewDetail.price.toLocaleString("vi-VN", {

@@ -11,6 +11,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import lombok.extern.slf4j.Slf4j;
+
 import fit.iuh.backend.modules.catalog.domain.entity.Brand;
 import fit.iuh.backend.modules.catalog.domain.entity.Category;
 import fit.iuh.backend.modules.catalog.domain.entity.Product;

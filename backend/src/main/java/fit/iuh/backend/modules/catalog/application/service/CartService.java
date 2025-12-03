@@ -8,6 +8,7 @@ import fit.iuh.backend.modules.catalog.domain.entity.Product;
 import fit.iuh.backend.modules.catalog.domain.repository.ProductRepository;
 import fit.iuh.backend.modules.catalog.domain.repository.CartItemRepository;
 import fit.iuh.backend.modules.catalog.domain.repository.CartRepository;
+import fit.iuh.backend.modules.catalog.domain.repository.ProductImageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +26,7 @@ public class CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
+    private final ProductImageRepository productImageRepository;
 
 
 
@@ -112,6 +114,16 @@ public class CartService {
         return mapToDto(cart, items);
     }
 
+    public void clearCart(UUID userId) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseGet(() -> createCartForUser(userId));
+
+        List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
+        
+        // Delete all cart items
+        cartItemRepository.deleteAll(items);
+    }
+
     private CartDto mapToDto(Cart cart, List<CartItem> items) {
         List<CartItemDto> itemDtos = items.stream()
                 .map(this::mapToDto)
@@ -134,11 +146,18 @@ public class CartService {
         Product product = cartItem.getProduct();
         BigDecimal subtotal = product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()));
 
+        // Get first product image
+        String productImage = productImageRepository.findByProductId(product.getId())
+                .stream()
+                .findFirst()
+                .map(img -> img.getImageUrl())
+                .orElse(null);
+
         return CartItemDto.builder()
                 .id(cartItem.getId())
                 .productId(product.getId())
                 .productName(product.getName())
-                .productImage(null) // TODO: Implement image fetching from ProductImage repository
+                .productImage(productImage)
                 .price(product.getPrice())
                 .quantity(cartItem.getQuantity())
                 .subtotal(subtotal)

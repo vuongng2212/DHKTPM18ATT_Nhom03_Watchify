@@ -12,7 +12,7 @@ import {
 } from "chart.js";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { getProducts, deleteProduct } from "../../apiservice/apiProduct";
 import {
   getBrands,
@@ -45,7 +45,13 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
-  const { user } = useCurrentApp();
+  const { user, isAuthenticated } = useCurrentApp();
+
+  // Check if user is authenticated and has admin role
+  if (!isAuthenticated || !user || !user.roles?.includes('ROLE_ADMIN')) {
+    return <Navigate to="/" />;
+  }
+
   const [activeTab, setActiveTab] = useState("overview");
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState([]);
@@ -99,20 +105,25 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      console.log("DashBoard: Starting fetchData");
       await fetchBrandsData();
       await fetchProducts();
+      console.log("DashBoard: fetchData completed");
     };
     fetchData();
   }, []);
 
   const fetchBrandsData = async () => {
+    console.log("DashBoard: Starting fetchBrandsData");
     try {
       const response = await getBrands();
       console.log("Brands API Response:", response);
       if (response && Array.isArray(response.brands)) {
         setBrands(response.brands);
+        console.log("DashBoard: Brands loaded:", response.brands.length);
       } else {
         setBrands([]);
+        console.log("DashBoard: No brands data");
       }
     } catch (err) {
       console.error("Fetch Brands Error:", err);
@@ -125,13 +136,16 @@ const Dashboard = () => {
   };
 
   const fetchProducts = async () => {
+    console.log("DashBoard: Starting fetchProducts");
     try {
       const response = await getProducts(1, 30);
       console.log("Products API Response:", response);
       if (response && response.productDatas) {
         setProducts(response.productDatas);
+        console.log("DashBoard: Products loaded:", response.productDatas.length);
       } else {
         setProducts([]);
+        console.log("DashBoard: No products data");
       }
     } catch (err) {
       console.error("Fetch Products Error:", err);
@@ -204,7 +218,7 @@ const Dashboard = () => {
 
   const filteredBrands = Array.isArray(brands)
     ? brands.filter((brand) =>
-        brand.ten.toLowerCase().includes(searchTerm.toLowerCase())
+        brand.ten && brand.ten.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : [];
 
@@ -220,18 +234,22 @@ const Dashboard = () => {
   };
 
   const fetchOrders = async (page = ordersPage) => {
+    console.log("DashBoard: Starting fetchOrders, page:", page);
     setOrdersLoading(true);
     try {
       const res = await getAllOrdersApi(page, itemsPerPage);
+      console.log("Orders API Response:", res);
       if (res.data && res.status) {
         setOrders(res.data.orders);
         setOrdersTotalPages(res.data.totalPages);
         setTotalOrders(res.data.total);
+        console.log("DashBoard: Orders loaded:", res.data.orders.length);
       } else {
         setOrders([]);
+        console.log("DashBoard: No orders data");
       }
     } catch (err) {
-      console.log(err);
+      console.log("Fetch Orders Error:", err);
       setOrders([]);
     } finally {
       setOrdersLoading(false);
@@ -270,7 +288,7 @@ const Dashboard = () => {
 
   // Lọc dữ liệu theo từ khóa tìm kiếm
   const filteredProducts = products.filter((product) =>
-    product.tenDH.toLowerCase().includes(searchTerm.toLowerCase())
+    product.tenDH && product.tenDH.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Định nghĩa các tab
@@ -435,17 +453,22 @@ const Dashboard = () => {
   };
 
   const fetchUsers = async (page = usersPage, search = userSearch) => {
+    console.log("DashBoard: Starting fetchUsers, page:", page, "search:", search);
     setUsersLoading(true);
     try {
       const res = await getUsersApi(page, 5, search);
+      console.log("Users API Response:", res);
       if (res.status && res.data) {
         setUsers(res.data.users);
         setUsersTotalPages(res.data.pagination.totalPages);
         setTotalUsers(res.data.pagination.totalUsers);
+        console.log("DashBoard: Users loaded:", res.data.users.length);
       } else {
         setUsers([]);
+        console.log("DashBoard: No users data");
       }
-    } catch {
+    } catch (err) {
+      console.log("Fetch Users Error:", err);
       setUsers([]);
     } finally {
       setUsersLoading(false);
@@ -554,6 +577,7 @@ const Dashboard = () => {
     (sum, order) => sum + (Number(order.tongTien) || 0),
     0
   );
+  console.log("DashBoard: Calculated totalRevenue:", totalRevenue, "from orders:", orders.length);
 
   return (
     <div className="min-h-screen flex font-roboto bg-gray-100">
@@ -646,6 +670,7 @@ const Dashboard = () => {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
+                {console.log("DashBoard: Rendering overview tab")}
                 <h2 className="text-2xl font-semibold mb-6 text-gray-800 select-none">
                   Tổng quan
                 </h2>
@@ -780,6 +805,7 @@ const Dashboard = () => {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
+                {console.log("DashBoard: Rendering products tab")}
                 <h2 className="text-2xl font-semibold mb-6 text-gray-800 select-none">
                   Quản lý sản phẩm
                 </h2>
@@ -913,6 +939,7 @@ const Dashboard = () => {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
+                {console.log("DashBoard: Rendering brands tab")}
                 <h2 className="text-2xl font-semibold mb-6 text-gray-800 select-none">
                   Quản lý Thương Hiệu
                 </h2>
@@ -1067,6 +1094,7 @@ const Dashboard = () => {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
+                {console.log("DashBoard: Rendering orders tab")}
                 <h2 className="text-2xl font-semibold mb-6 text-gray-800 text-center select-none">
                   Quản lý đơn hàng
                 </h2>
@@ -1356,6 +1384,7 @@ const Dashboard = () => {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
+                {console.log("DashBoard: Rendering customers tab")}
                 <h2 className="text-2xl font-semibold mb-6 text-gray-800 select-none">
                   Quản lý người dùng
                 </h2>
@@ -1472,6 +1501,7 @@ const Dashboard = () => {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
               >
+                {console.log("DashBoard: Rendering analytics tab")}
                 <h2 className="text-2xl font-semibold mb-6 text-gray-800 select-none">
                   Thống kê
                 </h2>

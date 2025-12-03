@@ -9,8 +9,8 @@ import {
 } from "../services/api";
 
 // Lấy danh sách sản phẩm
-export const getProducts = async (params = {}) => {
-  const response = await getProductsApi(params);
+export const getProducts = async (page = 0, size = 12) => {
+  const response = await getProductsApi({ page, size });
   return response;
 };
 
@@ -44,22 +44,28 @@ export const getNewProducts = async (limit = 10) => {
   return response;
 };
 
-// Note: Backend does not have delete endpoint yet
+// Delete a product
 export const deleteProduct = async (id) => {
-  // Placeholder
-  throw new Error("Delete not implemented");
+  const response = await axiosInventory.delete(`/api/v1/products/${id}`);
+  return response;
 };
 
-// Hàm để tạo sản phẩm mới
-// Note: Backend does not have create endpoint yet
+// Create a new product
 export const createProduct = async (formData) => {
-  // Placeholder
-  throw new Error("Create not implemented");
+  const response = await axiosInventory.post('/api/v1/products', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response;
 };
 
-// Hàm để cập nhật sản phẩm
-// Note: Backend does not have update endpoint yet
+// Update an existing product
 export const updateProduct = async (id, formData) => {
-  // Placeholder
-  throw new Error("Update not implemented");
+  const response = await axiosInventory.put(`/api/v1/products/${id}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response;
 };

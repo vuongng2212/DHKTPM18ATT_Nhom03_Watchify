@@ -67,4 +67,9 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
      * Check if SKU exists
      */
     boolean existsBySku(String sku);
+
+    /**
+     * Check if slug exists
+     */
+    boolean existsBySlug(String slug);
 }

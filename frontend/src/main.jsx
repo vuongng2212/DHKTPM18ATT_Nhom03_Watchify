@@ -2,6 +2,7 @@ import "@ant-design/v5-patch-for-react-19";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import "./utils/chartConfig"; // Import Chart.js configuration globally
 import Layout from "./components/Layout";
 import AdminLayout from "./components/AdminLayout";
 import PaymentResult from "./components/PaymentResult";
@@ -31,6 +32,8 @@ import BrandsManagement from "./pages/admin/BrandsManagement";
 import Reports from "./pages/admin/Analytics";
 import FormAddProduct from "./pages/admin/FormAddProduct";
 import FormUpdate from "./pages/admin/FormUpdate";
+import DebugUsers from "./pages/admin/DebugUsers";
+import TestUserActions from "./pages/admin/TestUserActions";
 
 const AdminRoute = ({ children }) => {
   const { user, isAuthenticated } = useCurrentApp();
@@ -148,6 +151,14 @@ const router = createBrowserRouter([
       {
         path: "analytics",
         element: <Reports />,
+      },
+      {
+        path: "debug-users",
+        element: <DebugUsers />,
+      },
+      {
+        path: "test-user-actions",
+        element: <TestUserActions />,
       },
     ],
   },

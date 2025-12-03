@@ -137,46 +137,71 @@ const UsersManagement = () => {
   };
 
   const handleEdit = (record) => {
+    console.log('=== HANDLE EDIT CLICKED ===');
+    console.log('📋 Record to edit:', record);
+    console.log('📋 User ID:', record.id);
+    console.log('📋 User full name:', record.fullName);
+    console.log('📋 User first name:', record.firstName);
+    console.log('📋 User last name:', record.lastName);
+    console.log('📋 User email:', record.email);
+    console.log('📋 User phone:', record.phone);
+    console.log('📋 User roles:', record.roles);
+    
     setSelectedUser(record);
-    form.setFieldsValue({
-      fullName: record.fullName,
+    
+    const formValues = {
+      firstName: record.firstName || '',
+      lastName: record.lastName || '',
       email: record.email,
-      phone: record.phone,
-      roles: record.roles,
-    });
+      phone: record.phone || '',
+      roles: record.roles || []
+    };
+    
+    console.log('📝 Setting form values:', formValues);
+    form.setFieldsValue(formValues);
     setEditModalVisible(true);
+    console.log('✅ Edit modal opened');
   };
 
   const handleEditSubmit = async () => {
     try {
+      console.log('=== EDIT USER SUBMIT START ===');
       const values = await form.validateFields();
       
-      console.log('=== Update User Profile ===');
-      console.log('User ID:', selectedUser.id);
-      console.log('Form values:', values);
-      console.log('Selected user:', selectedUser);
+      console.log('✅ Form validation passed');
+      console.log('📋 User ID:', selectedUser.id);
+      console.log('📋 Form values:', values);
+      console.log('📋 Selected user full object:', selectedUser);
       
-      // Prepare update data - only send fields that can be updated
+      // Prepare update data - use form values directly (they're required fields)
       const updateData = {
-        firstName: values.firstName || selectedUser.firstName,
-        lastName: values.lastName || selectedUser.lastName,
-        phone: values.phone || selectedUser.phone || null
+        firstName: values.firstName?.trim() || null,
+        lastName: values.lastName?.trim() || null,
+        phone: values.phone?.trim() || null
       };
       
-      console.log('Update data:', updateData);
+      console.log('📤 Sending update data:', updateData);
+      console.log('📍 API endpoint: PUT /api/v1/users/' + selectedUser.id);
       
-      await updateUserApi(selectedUser.id, updateData);
+      const response = await updateUserApi(selectedUser.id, updateData);
+      
+      console.log('✅ Update response:', response);
       
       message.success('Cập nhật thông tin thành công');
       setEditModalVisible(false);
       form.resetFields();
+      
+      console.log('🔄 Refreshing users list...');
       fetchUsers();
+      console.log('=== EDIT USER SUBMIT SUCCESS ===');
     } catch (error) {
-      console.error('=== Error Updating User ===');
+      console.error('=== ❌ ERROR UPDATING USER ===');
       console.error('Error object:', error);
       console.error('Error response:', error.response);
+      console.error('Error response status:', error.response?.status);
       console.error('Error response data:', error.response?.data);
       console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
       
       let errorMessage = 'Không thể cập nhật thông tin';
       
@@ -191,18 +216,43 @@ const UsersManagement = () => {
         }
       }
       
+      console.error('Final error message:', errorMessage);
       message.error(errorMessage);
+      console.error('=== EDIT USER SUBMIT FAILED ===');
     }
   };
 
   const handleLockToggle = async (record) => {
     try {
-      await toggleUserLockApi(record.id);
-      message.success(record.locked ? 'Mở khóa tài khoản thành công' : 'Khóa tài khoản thành công');
+      console.log('=== TOGGLE LOCK START ===');
+      console.log('📋 User to toggle:', record);
+      console.log('📋 User ID:', record.id);
+      console.log('📋 Current locked status:', record.locked);
+      console.log('📍 Action:', record.locked ? 'UNLOCK' : 'LOCK');
+      console.log('📍 API endpoint: PUT /api/v1/users/' + record.id + '/toggle-lock');
+      
+      const response = await toggleUserLockApi(record.id);
+      
+      console.log('✅ Toggle response:', response);
+      
+      const successMessage = record.locked ? 'Mở khóa tài khoản thành công' : 'Khóa tài khoản thành công';
+      message.success(successMessage);
+      
+      console.log('🔄 Refreshing users list...');
       fetchUsers();
+      console.log('=== TOGGLE LOCK SUCCESS ===');
     } catch (error) {
-      console.error('Error toggling lock:', error);
-      message.error(error.response?.data?.message || 'Không thể thay đổi trạng thái tài khoản');
+      console.error('=== ❌ ERROR TOGGLING LOCK ===');
+      console.error('Error object:', error);
+      console.error('Error response:', error.response);
+      console.error('Error response status:', error.response?.status);
+      console.error('Error response data:', error.response?.data);
+      console.error('Error message:', error.message);
+      
+      const errorMessage = error.response?.data?.message || 'Không thể thay đổi trạng thái tài khoản';
+      console.error('Final error message:', errorMessage);
+      message.error(errorMessage);
+      console.error('=== TOGGLE LOCK FAILED ===');
     }
   };
 
@@ -520,11 +570,19 @@ const UsersManagement = () => {
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            name="fullName"
-            label="Họ và tên"
-            rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
+            name="firstName"
+            label="Tên"
+            rules={[{ required: true, message: 'Vui lòng nhập tên' }]}
           >
-            <Input placeholder="Nhập họ và tên" />
+            <Input placeholder="Nhập tên" />
+          </Form.Item>
+          
+          <Form.Item
+            name="lastName"
+            label="Họ"
+            rules={[{ required: true, message: 'Vui lòng nhập họ' }]}
+          >
+            <Input placeholder="Nhập họ" />
           </Form.Item>
           
           <Form.Item

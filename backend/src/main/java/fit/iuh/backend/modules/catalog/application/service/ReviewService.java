@@ -76,7 +76,7 @@ public class ReviewService {
             .rating(rating)
             .title(title)
             .content(content)
-            .status("PENDING")
+            .status("APPROVED")
             .helpfulCount(0)
             .build();
         
@@ -131,6 +131,21 @@ public class ReviewService {
      */
     public Double getAverageRating(UUID productId) {
         return reviewRepository.getAverageRating(productId);
+    }
+
+    /**
+     * Get all reviews (admin only)
+     */
+    public List<ReviewDto> getAllReviews() {
+        return reviewRepository.findAll()
+            .stream()
+            .map(review -> {
+                String userFullName = userRepository.findById(review.getUserId())
+                    .map(user -> user.getFirstName() + " " + user.getLastName())
+                    .orElse("Unknown User");
+                return reviewMapper.toDtoWithUserName(review, userFullName);
+            })
+            .toList();
     }
 
     /**

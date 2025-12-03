@@ -29,8 +29,9 @@ const ProductDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [reviews, setReviews] = useState([]);
   const [reviewLoading, setReviewLoading] = useState(false);
-  const [newStar, setNewStar] = useState(0);
-  const [newComment, setNewComment] = useState("");
+  const [newRating, setNewRating] = useState(0);
+  const [newTitle, setNewTitle] = useState("");
+  const [newContent, setNewContent] = useState("");
   const [submitLoading, setSubmitLoading] = useState(false);
   const {
     dataViewDetail,
@@ -135,40 +136,102 @@ const ProductDetailPage = () => {
     }
   };
 
+  // Helper function to convert createdAt array to Date object
+  const parseCreatedAt = (createdAt) => {
+    if (Array.isArray(createdAt)) {
+      // Backend returns: [year, month, day, hour, minute, second, nanosecond]
+      const [year, month, day, hour, minute, second] = createdAt;
+      return new Date(year, month - 1, day, hour, minute, second);
+    }
+    return new Date(createdAt);
+  };
+
   const handleAddReview = async () => {
-    if (!newStar) {
+    console.log("=== SUBMIT REVIEW START ===");
+    console.log("Authentication status:", isAuthenticated);
+    console.log("Product ID:", dataViewDetail?.id);
+    console.log("Rating:", newRating);
+    console.log("Title:", newTitle);
+    console.log("Content:", newContent);
+    
+    if (!newRating) {
       messageApi.open({ type: "error", content: "Vui lòng chọn số sao!" });
       return;
     }
+    if (!newTitle?.trim()) {
+      messageApi.open({ type: "error", content: "Vui lòng nhập tiêu đề!" });
+      return;
+    }
+    if (!newContent?.trim()) {
+      messageApi.open({ type: "error", content: "Vui lòng nhập nội dung đánh giá!" });
+      return;
+    }
+    
     setSubmitLoading(true);
     try {
-      await addReviewApi({
-        product: dataViewDetail.id,
-        star: newStar,
-        comment: newComment,
+      const reviewData = {
+        productId: dataViewDetail.id,
+        rating: newRating,
+        title: newTitle,
+        content: newContent
+      };
+      console.log("📤 Sending review data:", reviewData);
+      
+      const response = await addReviewApi(reviewData);
+      console.log("✅ Review submitted successfully:", response);
+      
+      messageApi.open({
+        type: "success", 
+        content: "Đã gửi đánh giá thành công!" 
       });
-      messageApi.open({ type: "success", content: "Đã gửi đánh giá." });
-      setNewStar(0);
-      setNewComment("");
+      
+      setNewRating(0);
+      setNewTitle("");
+      setNewContent("");
+      
+      // Reload reviews
+      console.log("🔄 Reloading reviews...");
       setReviewLoading(true);
       const res = await fetchReviewsByProduct(dataViewDetail.id);
-      if (res.success) setReviews(res.data);
+      console.log("✅ Reviews reloaded:", res);
+      setReviews(res || []);
     } catch (error) {
-      console.error(error);
-      messageApi.open({ type: "error", content: "Gửi đánh giá thất bại." });
+      console.error("❌ Submit review error:", error);
+      console.error("Error response:", error.response);
+      console.error("Error data:", error.response?.data);
+      const errorMessage = error.response?.data?.message || "Gửi đánh giá thất bại.";
+      messageApi.open({ type: "error", content: errorMessage });
     } finally {
       setReviewLoading(false);
       setSubmitLoading(false);
+      console.log("=== SUBMIT REVIEW END ===");
     }
   };
 
   useEffect(() => {
     if (dataViewDetail?.id) {
+      console.log("=== FETCH REVIEWS START ===");
+      console.log("Product ID:", dataViewDetail.id);
       setReviewLoading(true);
       fetchReviewsByProduct(dataViewDetail.id)
-        .then((res) => res.success && setReviews(res.data))
-        .catch((err) => console.error(err))
-        .finally(() => setReviewLoading(false));
+        .then((res) => {
+          console.log("✅ Fetch reviews response:", res);
+          console.log("Response data:", res);
+          console.log("Number of reviews:", res?.length || 0);
+          setReviews(res || []);
+        })
+        .catch((err) => {
+          console.error("❌ Fetch reviews error:", err);
+          console.error("Error response:", err.response);
+          console.error("Error message:", err.message);
+          setReviews([]);
+        })
+        .finally(() => {
+          setReviewLoading(false);
+          console.log("=== FETCH REVIEWS END ===");
+        });
+    } else {
+      console.log("⚠️ No product ID available for fetching reviews");
     }
   }, [dataViewDetail?.id]);
 
@@ -304,15 +367,32 @@ const ProductDetailPage = () => {
         <div className="mt-10 px-12">
           <h2 className="text-xl font-bold mb-4">Đánh giá sản phẩm</h2>
           {isAuthenticated ? (
-            <div className="mb-6">
-              <Rate value={newStar} onChange={setNewStar} />
-              <Input.TextArea
-                rows={4}
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Viết nhận xét..."
-                className="mt-2"
-              />
+            <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+              <div className="mb-3">
+                <label className="block text-sm font-medium mb-1">Đánh giá của bạn:</label>
+                <Rate value={newRating} onChange={setNewRating} />
+              </div>
+              
+              <div className="mb-3">
+                <label className="block text-sm font-medium mb-1">Tiêu đề:</label>
+                <Input
+                  placeholder="Nhập tiêu đề đánh giá..."
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  maxLength={255}
+                />
+              </div>
+              
+              <div className="mb-3">
+                <label className="block text-sm font-medium mb-1">Nội dung:</label>
+                <Input.TextArea
+                  rows={4}
+                  value={newContent}
+                  onChange={(e) => setNewContent(e.target.value)}
+                  placeholder="Viết nhận xét chi tiết về sản phẩm..."
+                />
+              </div>
+              
               <Button
                 type="primary"
                 onClick={handleAddReview}
@@ -334,29 +414,38 @@ const ProductDetailPage = () => {
           {reviewLoading ? (
             <Spin />
           ) : reviews.length > 0 ? (
-            reviews.map((review) => (
-              <div key={review._id} className="mb-4 border-b pb-4">
-                <div className="flex flex-col">
-                  <div className="flex items-center mb-2">
-                    <img
-                      src={review.user.avatar || ""}
-                      alt={review.user.tenNguoiDung}
-                      className="w-8 h-8 rounded-full mr-2"
-                    />
-                    <span className="mr-2 text-gray-600 select-none">
-                      {review.user.tenNguoiDung}
-                    </span>
+            <>
+              {console.log("📋 Rendering reviews:", reviews)}
+              {reviews.map((review) => {
+                console.log("Rendering review:", review);
+                return (
+                  <div key={review.id} className="mb-4 border-b pb-4">
+                    <div className="flex flex-col">
+                      <div className="flex items-center mb-2">
+                        <span className="font-semibold text-gray-800 mr-2">
+                          {review.userFullName || "Khách hàng"}
+                        </span>
+                      </div>
+                      <Rate value={review.rating} disabled />
+                      <h4 className="font-semibold mt-2 text-gray-900">{review.title}</h4>
+                    </div>
+                    <p className="mt-2 text-gray-700">{review.content}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-gray-400">
+                        {parseCreatedAt(review.createdAt).toLocaleString("vi-VN")}
+                      </span>
+                      {review.helpfulCount > 0 && (
+                        <span className="text-xs text-gray-500">
+                          {review.helpfulCount} người thấy hữu ích
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <Rate value={review.star} disabled />
-                </div>
-                <p className="mt-2">{review.comment}</p>
-                <span className="text-xs text-gray-400">
-                  {new Date(review.createdAt).toLocaleString()}
-                </span>
-              </div>
-            ))
+                );
+              })}
+            </>
           ) : (
-            <p className="select-none">Sản phẩm chưa có đánh giá nào</p>
+            <p className="select-none text-gray-500">Sản phẩm chưa có đánh giá nào</p>
           )}
         </div>
       </div>

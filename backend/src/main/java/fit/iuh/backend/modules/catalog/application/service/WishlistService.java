@@ -1,9 +1,14 @@
 package fit.iuh.backend.modules.catalog.application.service;
 
+import fit.iuh.backend.modules.catalog.application.dto.ProductDto;
+import fit.iuh.backend.modules.catalog.application.dto.ProductImageDto;
 import fit.iuh.backend.modules.catalog.application.dto.WishlistDto;
+import fit.iuh.backend.modules.catalog.application.mapper.ProductImageMapper;
+import fit.iuh.backend.modules.catalog.application.mapper.ProductMapper;
 import fit.iuh.backend.modules.catalog.application.mapper.WishlistMapper;
 import fit.iuh.backend.modules.catalog.domain.entity.Product;
 import fit.iuh.backend.modules.catalog.domain.entity.Wishlist;
+import fit.iuh.backend.modules.catalog.domain.repository.ProductImageRepository;
 import fit.iuh.backend.modules.catalog.domain.repository.ProductRepository;
 import fit.iuh.backend.modules.catalog.domain.repository.WishlistRepository;
 import fit.iuh.backend.modules.identity.domain.entity.User;
@@ -18,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing user wishlists.
@@ -33,6 +39,9 @@ public class WishlistService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final WishlistMapper wishlistMapper;
+    private final ProductMapper productMapper;
+    private final ProductImageMapper productImageMapper;
+    private final ProductImageRepository productImageRepository;
 
     /**
      * Get all wishlist items for a user
@@ -42,11 +51,33 @@ public class WishlistService {
      */
     public List<WishlistDto> getUserWishlist(UUID userId) {
         log.info("Fetching wishlist for user: {}", userId);
-        
+
         List<Wishlist> wishlists = wishlistRepository.findByUserIdWithProductDetails(userId);
-        
+
         log.info("Found {} wishlist items for user: {}", wishlists.size(), userId);
-        return wishlistMapper.toDtoList(wishlists);
+
+        return wishlists.stream()
+            .map(wishlist -> {
+                Product product = wishlist.getProduct();
+                List<ProductImageDto> images = productImageMapper.toDtoList(
+                    productImageRepository.findByProductIdOrderByDisplayOrderAsc(product.getId())
+                );
+                ProductDto productDto = productMapper.toDto(product);
+                productDto.setImages(images);
+
+                return WishlistDto.builder()
+                    .id(wishlist.getId())
+                    .userId(wishlist.getUser() != null ? wishlist.getUser().getId() : null)
+                    .product(productDto)
+                    .notes(wishlist.getNotes())
+                    .priority(wishlist.getPriority())
+                    .notifyOnSale(wishlist.getNotifyOnSale())
+                    .notifyOnStock(wishlist.getNotifyOnStock())
+                    .createdAt(wishlist.getCreatedAt())
+                    .updatedAt(wishlist.getUpdatedAt())
+                    .build();
+            })
+            .collect(Collectors.toList());
     }
 
     /**

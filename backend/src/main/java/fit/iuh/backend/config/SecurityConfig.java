@@ -56,6 +56,9 @@ public class SecurityConfig {
                         // Public endpoints - Auth
                         .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
                         
+                        // Public endpoints - Orders (Guest checkout)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/guest").permitAll()
+                        
                         // Public endpoints - Products
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()

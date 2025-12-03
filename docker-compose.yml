@@ -33,16 +33,23 @@ services:
       - watchify-network
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_BACKEND_CATALOG_URL: http://backend:8080
+        VITE_BACKEND_USER_URL: http://backend:8080
+        VITE_BACKEND_ORDER_URL: http://backend:8080
+        VITE_BACKEND_REVIEW_URL: http://backend:8080
+        VITE_BACKEND_CHATBOT_URL: http://backend:8080
     container_name: watchify-frontend
     ports:
       - "3001:80"
     environment:
-      VITE_BACKEND_CATALOG_URL : http://localhost:8888
-      VITE_BACKEND_USER_URL : http://localhost:8888
-      VITE_BACKEND_ORDER_URL : http://localhost:8888
-      VITE_BACKEND_REVIEW_URL : http://localhost:8888
-      VITE_BACKEND_CHATBOT_URL : http://localhost:8888
+      VITE_BACKEND_CATALOG_URL: http://backend:8080
+      VITE_BACKEND_USER_URL: http://backend:8080
+      VITE_BACKEND_ORDER_URL: http://backend:8080
+      VITE_BACKEND_REVIEW_URL: http://backend:8080
+      VITE_BACKEND_CHATBOT_URL: http://backend:8080
     depends_on:
       - backend
     networks:

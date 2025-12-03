@@ -4,6 +4,7 @@ import { Col, Row, Empty, Form, Input, Radio, Button, Select } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useCurrentApp } from "../../context/app.context";
 import { createOrderApi, getPaymentByOrderIdApi } from "../../services/api";
+import { createGuestOrderApi } from "../../services/cart/cartApi";
 import { getUserAddressesApi } from "../../services/api";
 import info from "../../assets/info.png";
 import discount from "../../assets/discount.png";
@@ -14,10 +15,12 @@ const CartPage = () => {
   const navigate = useNavigate();
   const {
     user,
+    isAuthenticated,
     carts,
     setCarts,
     updateCartItemQuantity,
     removeFromCart,
+    clearCartItems,
     messageApi,
     notificationApi,
   } = useCurrentApp();
@@ -26,12 +29,16 @@ const CartPage = () => {
   const [addresses, setAddresses] = useState([]);
 
   useEffect(() => {
+    // Set default payment method
+    form.setFieldsValue({
+      phuongThucThanhToan: "COD",
+    });
+
     if (user) {
       form.setFieldsValue({
-        tenNguoiDung: user.tenNguoiDung,
-        sdt: user.sdt,
+        tenNguoiDung: user.tenNguoiDun || user.firstName + " " + user.lastName,
+        sdt: user.sdt || user.phone,
         email: user.email,
-        phuongThucThanhToan: "COD",
       });
 
       // Fetch user addresses
@@ -48,14 +55,14 @@ const CartPage = () => {
   }, [user, form]);
 
   const handleIncreaseQuantity = (itemId) => {
-    const item = carts.find((item) => item._id === itemId);
+    const item = carts.find((item) => (item.productId || item._id || item.id) === itemId);
     if (item) {
       updateCartItemQuantity(itemId, item.quantity + 1);
     }
   };
 
   const handleDecreaseQuantity = (itemId) => {
-    const item = carts.find((item) => item._id === itemId);
+    const item = carts.find((item) => (item.productId || item._id || item.id) === itemId);
     if (item && item.quantity > 1) {
       updateCartItemQuantity(itemId, item.quantity - 1);
     } else {
@@ -95,11 +102,11 @@ const CartPage = () => {
     setIsSubmit(true);
 
     const items = carts.map((cart) => ({
-      productId: cart.id || cart._id,
+      productId: cart.productId || cart.id || cart._id,
       quantity: cart.quantity,
     }));
 
-    const order = {
+    const baseOrder = {
       paymentMethod: values.phuongThucThanhToan === "COD" ? "CASH_ON_DELIVERY" : "BANK_TRANSFER",
       shippingAddress: values.diaChi,
       billingAddress: values.diaChi,
@@ -107,14 +114,34 @@ const CartPage = () => {
       items,
     };
 
-    console.log("Order data to send:", order);
-
     try {
-      const res = await createOrderApi(order);
+      let res;
+
+      if (isAuthenticated) {
+        // Authenticated user checkout
+        console.log("Authenticated user order:", baseOrder);
+        res = await createOrderApi(baseOrder);
+      } else {
+        // Guest checkout
+        const guestOrder = {
+          ...baseOrder,
+          guestName: values.tenNguoiDung,
+          guestPhone: values.sdt,
+          guestEmail: values.email,
+        };
+        console.log("Guest order:", guestOrder);
+        res = await createGuestOrderApi(guestOrder);
+      }
 
       if (res) {
-        localStorage.removeItem("carts");
-        setCarts([]);
+        // Clear cart after successful order
+        if (isAuthenticated) {
+          await clearCartItems();
+        } else {
+          localStorage.removeItem("carts");
+          setCarts([]);
+        }
+
         if (values.phuongThucThanhToan === "COD") {
           messageApi.open({
             type: "success",
@@ -172,51 +199,60 @@ const CartPage = () => {
         {carts.length > 0 ? (
           <div className="flex flex-col space-y-6 border px-6 py-4 border-gray-300 rounded-xl shadow-2xl">
             <div className="space-y-2">
-              {carts.map((item) => (
+              {carts.map((item, index) => (
                 <div
-                  key={item.id}
+                  key={item.id || item._id || `cart-item-${index}`}
                   className="flex items-center justify-between py-6 border-b border-[#EEEEEE]"
                 >
                   <div className="flex items-center space-x-4">
                     <img
-                      src={item.images?.[0] || (item.hinhAnh && Array.isArray(item.hinhAnh) && item.hinhAnh[0]?.duLieuAnh) || "https://via.placeholder.com/160x160?text=No+Image"}
-                      alt={item.name}
+                      src={item.productImage || item.image || (item.images && item.images[0]?.imageUrl) || (item.hinhAnh && Array.isArray(item.hinhAnh) && item.hinhAnh[0]?.duLieuAnh) || "https://via.placeholder.com/160x160?text=No+Image"}
+                      alt={item.productName || item.name}
                       className="w-40 h-40 object-cover"
+                      onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/160x160?text=No+Image'; }}
                     />
                     <div className="flex flex-col justify-between">
                       <span className="font-semibold text-2xl">
-                        {item.name}
+                        {item.productName || item.name}
                       </span>
                       <div className="flex items-center gap-4 mt-6">
                         <div className="flex items-center space-x-4">
                           <button
-                            onClick={() => handleDecreaseQuantity(item._id)}
+                            onClick={() => handleDecreaseQuantity(item.productId || item._id || item.id)}
                             className="flex items-center justify-center cursor-pointer text-xl w-6 h-6 border border-gray-500 rounded-sm px-2 py-2 transition duration-200 ease-in-out transform hover:scale-105"
                           >
                             -
                           </button>
                           <span className="text-xl">{item.quantity}</span>
                           <button
-                            onClick={() => handleIncreaseQuantity(item._id)}
+                            onClick={() => handleIncreaseQuantity(item.productId || item._id || item.id)}
                             className="flex items-center justify-center cursor-pointer text-xl w-6 h-6 border border-gray-500 rounded-sm px-2 py-2 transition duration-200 ease-in-out transform hover:scale-105"
                           >
                             +
                           </button>
                         </div>
                         <span className="text-black font-semibold text-xl ml-3">
-                          {typeof item.price === 'object' ? item.price : item.price}
+                          {(() => {
+                            let priceValue = item.price;
+                            if (typeof item.price === 'object' && item.price !== null) {
+                              priceValue = parseFloat(item.price);
+                            } else if (typeof item.price === 'string') {
+                              priceValue = parseFloat(item.price.replace(/[^\d.]/g, ""));
+                            }
+                            return (priceValue || 0).toLocaleString("vi-VN") + " đ";
+                          })()}
                         </span>
                       </div>
                       <div className="flex items-center space-x-6 mt-8">
                         <div
-                          onClick={() => handleRemoveItem(item._id)}
+                          onClick={() => handleRemoveItem(item.productId || item._id || item.id)}
                           className="flex items-center justify-center border border-gray-500 w-6 h-6 rounded-full text-sm cursor-pointer"
                         >
                           <DeleteOutlined />
                         </div>
                         <span
                           className="cursor-pointer transition-all duration-300 hover:text-red-400"
-                          onClick={() => handleRemoveItem(item._id)}
+                          onClick={() => handleRemoveItem(item.productId || item._id || item.id)}
                         >
                           Xóa
                         </span>
@@ -285,6 +321,7 @@ const CartPage = () => {
                             className="w-full border border-black rounded-md text-[#676971] text-sm text-center"
                             placeholder="Tên khách hàng"
                             style={{ padding: 8 }}
+                            disabled={isAuthenticated}
                             onKeyDown={(e) => {
                               if (
                                 e.target.value.length === 0 &&
@@ -315,6 +352,7 @@ const CartPage = () => {
                             className="w-full p-2 border border-black rounded-md text-[#676971] text-sm text-center"
                             placeholder="Số điện thoại"
                             style={{ padding: 8 }}
+                            disabled={isAuthenticated}
                             onKeyDown={(e) => {
                               if (
                                 e.target.value.length === 0 &&
@@ -352,6 +390,7 @@ const CartPage = () => {
                             className="w-full border border-black rounded-md text-[#676971] text-sm text-center"
                             placeholder="Email"
                             style={{ padding: 8 }}
+                            disabled={isAuthenticated}
                             onKeyDown={(e) => {
                               if (
                                 e.target.value.length === 0 &&

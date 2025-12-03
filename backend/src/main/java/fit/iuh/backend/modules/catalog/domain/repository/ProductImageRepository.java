@@ -2,6 +2,8 @@ package fit.iuh.backend.modules.catalog.domain.repository;
 
 import fit.iuh.backend.modules.catalog.domain.entity.ProductImage;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -38,4 +40,10 @@ public interface ProductImageRepository extends JpaRepository<ProductImage, UUID
      * Count images for a product
      */
     long countByProductId(UUID productId);
+
+    /**
+     * Find maximum display order for a product
+     */
+    @Query("SELECT MAX(pi.displayOrder) FROM ProductImage pi WHERE pi.productId = :productId")
+    Integer findMaxDisplayOrderByProductId(@Param("productId") UUID productId);
 }

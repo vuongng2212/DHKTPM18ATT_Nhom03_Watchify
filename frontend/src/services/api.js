@@ -10,6 +10,9 @@ const axiosChatbot = createInstanceAxios(
 );
 const axiosInventory = createInstanceAxios(import.meta.env.VITE_BACKEND_CATALOG_URL);
 
+// Export axios instances for use in other services
+export { axiosOrder };
+
 export const registerApi = (data) => {
   return axiosUser.post("/api/v1/auth/register", data);
 };
@@ -42,10 +45,22 @@ export const resetPasswordApi = ({ email, matKhau }) => {
   return axiosUser.post("/api/auth/resetPassword", { email, matKhau });
 };
 
-export const getUsersApi = (page = 1, limit = 5, search = "") => {
+export const getUsersApi = (page = 1, size = 10, search = "") => {
   return axiosUser.get(
-    `/api/users?page=${page}&limit=${limit}&search=${search}`
+    `/api/users?page=${page - 1}&size=${size}&search=${search}`
   );
+};
+
+export const lockUserApi = (userId) => {
+  return axiosUser.put(`/api/users/${userId}/lock`);
+};
+
+export const unlockUserApi = (userId) => {
+  return axiosUser.put(`/api/users/${userId}/unlock`);
+};
+
+export const toggleUserLockApi = (userId) => {
+  return axiosUser.put(`/api/users/${userId}/toggle-lock`);
 };
 
 export const getUserAddressesApi = () => {
@@ -77,7 +92,7 @@ export const updateProfileApi = (userId, data) => {
 };
 
 export const changePasswordApi = (data) => {
-  return axiosUser.put("/api/users/changePassword", data);
+  return axiosUser.put("/api/v1/users/changePassword", data);
 };
 
 export const getOrdersApi = (page = 1, limit = 10) => {
@@ -162,4 +177,103 @@ export const getNewProductsApi = (limit = 10) => {
 
 export const getPaymentByOrderIdApi = (orderId) => {
   return axiosOrder.get(`/api/v1/payments/order/${orderId}`);
+};
+
+// Product CRUD APIs
+export const createProductApi = (data, images) => {
+  const formData = new FormData();
+  
+  // Append product data
+  Object.keys(data).forEach(key => {
+    if (data[key] !== null && data[key] !== undefined) {
+      formData.append(key, data[key]);
+    }
+  });
+  
+  // Append images if provided
+  if (images && images.length > 0) {
+    images.forEach((file) => {
+      formData.append('hinhAnh', file);
+    });
+  }
+  
+  return axiosInventory.post('/api/v1/products', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+export const updateProductApi = (productId, data, images) => {
+  const formData = new FormData();
+  
+  // Append product data
+  Object.keys(data).forEach(key => {
+    if (data[key] !== null && data[key] !== undefined) {
+      formData.append(key, data[key]);
+    }
+  });
+  
+  // Append new images if provided
+  if (images && images.length > 0) {
+    images.forEach((file) => {
+      formData.append('hinhAnh', file);
+    });
+  }
+  
+  return axiosInventory.put(`/api/v1/products/${productId}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+export const deleteProductApi = (productId) => {
+  return axiosInventory.delete(`/api/v1/products/${productId}`);
+};
+
+// Brand CRUD APIs
+export const getBrandsApi = (params = {}) => {
+  return axiosInventory.get('/api/v1/brands', { params });
+};
+
+export const getBrandByIdApi = (brandId) => {
+  return axiosInventory.get(`/api/v1/brands/${brandId}`);
+};
+
+export const createBrandApi = (data) => {
+  return axiosInventory.post('/api/v1/brands', data);
+};
+
+export const updateBrandApi = (brandId, data) => {
+  return axiosInventory.put(`/api/v1/brands/${brandId}`, data);
+};
+
+export const deleteBrandApi = (brandId) => {
+  return axiosInventory.delete(`/api/v1/brands/${brandId}`);
+};
+
+export const toggleBrandVisibilityApi = (brandId) => {
+  return axiosInventory.patch(`/api/v1/brands/${brandId}/toggle-visibility`);
+};
+
+// Category CRUD APIs
+export const getCategoriesApi = (params = {}) => {
+  return axiosInventory.get('/api/v1/categories', { params });
+};
+
+export const getCategoryByIdApi = (categoryId) => {
+  return axiosInventory.get(`/api/v1/categories/${categoryId}`);
+};
+
+export const createCategoryApi = (data) => {
+  return axiosInventory.post('/api/v1/categories', data);
+};
+
+export const updateCategoryApi = (categoryId, data) => {
+  return axiosInventory.put(`/api/v1/categories/${categoryId}`, data);
+};
+
+export const deleteCategoryApi = (categoryId) => {
+  return axiosInventory.delete(`/api/v1/categories/${categoryId}`);
 };

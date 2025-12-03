@@ -20,7 +20,7 @@ services:
     build: ./backend
     container_name: watchify-backend
     ports:
-      - "8080:8080"
+      - "8888:8080"
     environment:
       DB_HOST: db
       DB_PORT: 3306
@@ -38,11 +38,11 @@ services:
     ports:
       - "3001:80"
     environment:
-      VITE_BACKEND_USER_URL: http://backend:8080
-      VITE_BACKEND_ORDER_URL: http://backend:8080
-      VITE_BACKEND_REVIEW_URL: http://backend:8080
-      VITE_BACKEND_CHATBOT_URL: http://backend:8080
-      VITE_BACKEND_CATALOG_URL: http://backend:8080
+      VITE_BACKEND_CATALOG_URL : http://localhost:8888
+      VITE_BACKEND_USER_URL : http://localhost:8888
+      VITE_BACKEND_ORDER_URL : http://localhost:8888
+      VITE_BACKEND_REVIEW_URL : http://localhost:8888
+      VITE_BACKEND_CHATBOT_URL : http://localhost:8888
     depends_on:
       - backend
     networks:

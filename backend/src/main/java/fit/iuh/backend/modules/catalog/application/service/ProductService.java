@@ -15,6 +15,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -179,11 +181,229 @@ public class ProductService {
     public void incrementViewCount(UUID productId) {
         Product product = productRepository.findById(productId)
             .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
-        
+
         product.incrementViewCount();
         productRepository.save(product);
-        
+
         log.info("Incremented view count for product: {}", productId);
+    }
+
+    /**
+     * Create a new product
+     */
+    @Transactional
+    public ProductDto createProduct(CreateProductRequest request, MultipartFile[] hinhAnh) {
+        // Validate brand exists
+        if (request.getBrandId() != null) {
+            brandRepository.findById(request.getBrandId())
+                .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + request.getBrandId()));
+        }
+
+        // Validate category exists if provided
+        if (request.getCategoryId() != null) {
+            categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + request.getCategoryId()));
+        }
+
+        // Generate slug from name
+        String slug = generateSlug(request.getName());
+
+        // Generate SKU
+        String sku = generateSku(request.getName());
+
+        // Create product entity
+        Product product = Product.builder()
+            .name(request.getName())
+            .slug(slug)
+            .sku(sku)
+            .description(request.getDescription())
+            .shortDescription(request.getShortDescription())
+            .price(request.getPrice())
+            .originalPrice(request.getOriginalPrice())
+            .discountPercentage(request.getDiscountPercentage())
+            .status(ProductStatus.ACTIVE)
+            .brandId(request.getBrandId())
+            .categoryId(request.getCategoryId())
+            .isFeatured(request.getIsFeatured())
+            .isNew(request.getIsNew())
+            .displayOrder(request.getDisplayOrder())
+            .build();
+
+        Product savedProduct = productRepository.save(product);
+
+        // Handle image uploads
+        if (hinhAnh != null && hinhAnh.length > 0) {
+            saveProductImages(savedProduct.getId(), hinhAnh);
+        }
+
+        log.info("Created new product: {}", savedProduct.getId());
+
+        return getProductById(savedProduct.getId());
+    }
+
+    /**
+     * Update an existing product
+     */
+    @Transactional
+    public ProductDto updateProduct(UUID productId, UpdateProductRequest request, MultipartFile[] hinhAnh) {
+        Product product = productRepository.findById(productId)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+
+        // Validate brand exists
+        if (request.getBrandId() != null) {
+            brandRepository.findById(request.getBrandId())
+                .orElseThrow(() -> new ResourceNotFoundException("Brand not found with id: " + request.getBrandId()));
+        }
+
+        // Validate category exists if provided
+        if (request.getCategoryId() != null) {
+            categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + request.getCategoryId()));
+        }
+
+        // Update slug if name changed
+        String newSlug = null;
+        if (!product.getName().equals(request.getName())) {
+            newSlug = generateSlug(request.getName());
+        }
+
+        // Update product fields
+        product.setName(request.getName());
+        if (newSlug != null) {
+            product.setSlug(newSlug);
+        }
+        product.setDescription(request.getDescription());
+        product.setShortDescription(request.getShortDescription());
+        product.setPrice(request.getPrice());
+        product.setOriginalPrice(request.getOriginalPrice());
+        product.setDiscountPercentage(request.getDiscountPercentage());
+        product.setBrandId(request.getBrandId());
+        product.setCategoryId(request.getCategoryId());
+        if (request.getIsFeatured() != null) {
+            product.setIsFeatured(request.getIsFeatured());
+        }
+        if (request.getIsNew() != null) {
+            product.setIsNew(request.getIsNew());
+        }
+        product.setDisplayOrder(request.getDisplayOrder());
+
+        Product savedProduct = productRepository.save(product);
+
+        // Handle image uploads (add new images)
+        if (hinhAnh != null && hinhAnh.length > 0) {
+            saveProductImages(savedProduct.getId(), hinhAnh);
+        }
+
+        log.info("Updated product: {}", productId);
+
+        return getProductById(savedProduct.getId());
+    }
+
+    /**
+     * Delete a product
+     */
+    @Transactional
+    public void deleteProduct(UUID productId) {
+        Product product = productRepository.findById(productId)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
+
+        // Delete associated images
+        productImageRepository.deleteByProductId(productId);
+
+        // Delete associated details
+        productDetailRepository.deleteByProductId(productId);
+
+        // Delete product
+        productRepository.delete(product);
+
+        log.info("Deleted product: {}", productId);
+    }
+
+    // Helper methods
+
+    private String generateSlug(String name) {
+        if (!StringUtils.hasText(name)) {
+            return "product-" + UUID.randomUUID().toString().substring(0, 8);
+        }
+
+        String slug = name.toLowerCase()
+            .replaceAll("[^a-z0-9\\s-]", "")
+            .replaceAll("\\s+", "-")
+            .replaceAll("-+", "-")
+            .trim();
+
+        if (slug.isEmpty()) {
+            return "product-" + UUID.randomUUID().toString().substring(0, 8);
+        }
+
+        // Ensure uniqueness
+        String baseSlug = slug;
+        int counter = 1;
+        while (productRepository.existsBySlug(slug)) {
+            slug = baseSlug + "-" + counter;
+            counter++;
+        }
+
+        return slug;
+    }
+
+    private String generateSku(String name) {
+        if (!StringUtils.hasText(name)) {
+            return "SKU-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        }
+
+        String sku = name.toUpperCase()
+            .replaceAll("[^A-Z0-9]", "")
+            .substring(0, Math.min(name.length(), 10));
+
+        if (sku.isEmpty()) {
+            return "SKU-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        }
+
+        // Ensure uniqueness
+        String baseSku = sku;
+        int counter = 1;
+        while (productRepository.existsBySku(sku)) {
+            sku = baseSku + counter;
+            counter++;
+        }
+
+        return sku;
+    }
+
+    private void saveProductImages(UUID productId, MultipartFile[] images) {
+        // Get current max display order
+        Integer maxOrder = productImageRepository.findMaxDisplayOrderByProductId(productId);
+        if (maxOrder == null) {
+            maxOrder = 0;
+        }
+
+        for (int i = 0; i < images.length; i++) {
+            MultipartFile image = images[i];
+            if (image != null && !image.isEmpty()) {
+                try {
+                    // Here you would typically save the file to a storage service
+                    // For now, we'll store the filename as imageUrl
+                    String fileName = image.getOriginalFilename();
+
+                    // Create ProductImage entity
+                    ProductImage productImage = ProductImage.builder()
+                        .productId(productId)
+                        .imageUrl(fileName) // Placeholder - in real implementation, this would be the uploaded file URL
+                        .altText("Product image")
+                        .displayOrder(maxOrder + i + 1)
+                        .isMain(i == 0 && maxOrder == 0) // First image is main if no existing images
+                        .build();
+
+                    productImageRepository.save(productImage);
+
+                    log.info("Saved product image: {} for product: {}", fileName, productId);
+                } catch (Exception e) {
+                    log.error("Failed to save product image: {}", image.getOriginalFilename(), e);
+                    // Continue with other images
+                }
+            }
+        }
     }
 
     // Helper methods

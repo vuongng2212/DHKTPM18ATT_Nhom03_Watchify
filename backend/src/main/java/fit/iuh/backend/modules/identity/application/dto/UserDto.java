@@ -24,8 +24,11 @@ public class UserDto {
     private String firstName;
     private String lastName;
     private String fullName;
+    private String tenNguoiDung;
+    private RoleDto quyen;
     private String phone;
     private String status;
+    private Boolean locked;
     private Set<String> roles;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -33,4 +36,12 @@ public class UserDto {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RoleDto {
+        private String tenQuyen;
+    }
 }

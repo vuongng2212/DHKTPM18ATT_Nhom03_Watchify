@@ -1,5 +1,6 @@
 package fit.iuh.backend.modules.order.application.dto;
 
+import fit.iuh.backend.modules.identity.application.dto.UserDto;
 import fit.iuh.backend.modules.order.domain.entity.OrderStatus;
 import fit.iuh.backend.modules.order.domain.entity.PaymentMethod;
 import lombok.AllArgsConstructor;
@@ -23,9 +24,15 @@ public class OrderDto {
 
     private UUID id;
 
+    private String orderNumber;
+
     private UUID userId;
 
+    private UserDto user;
+
     private BigDecimal totalAmount;
+
+    private BigDecimal total; // Alias for totalAmount for frontend compatibility
 
     private OrderStatus status;
 
@@ -38,6 +45,8 @@ public class OrderDto {
     private String notes;
 
     private LocalDateTime orderDate;
+
+    private LocalDateTime createdAt; // Alias for orderDate
 
     private List<OrderItemDto> items;
 }

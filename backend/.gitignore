@@ -31,6 +31,10 @@ out/
 /nbbuild/
 /dist/
 /nbdist/
+# Log files
+*.log
+app.log
+backend.log
 /.nb-gradle/
 
 ### VS Code ###

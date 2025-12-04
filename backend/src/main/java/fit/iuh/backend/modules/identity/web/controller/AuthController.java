@@ -2,6 +2,7 @@ package fit.iuh.backend.modules.identity.web.controller;
 
 import fit.iuh.backend.modules.identity.application.dto.LoginRequest;
 import fit.iuh.backend.modules.identity.application.dto.LoginResponse;
+import fit.iuh.backend.modules.identity.application.dto.RefreshTokenRequest;
 import fit.iuh.backend.modules.identity.application.dto.RegisterRequest;
 import fit.iuh.backend.modules.identity.application.dto.UserDto;
 import fit.iuh.backend.modules.identity.application.service.AuthService;
@@ -61,5 +62,40 @@ public class AuthController {
     public ResponseEntity<UserDto> getCurrentUser() {
         UserDto user = authService.getCurrentUser();
         return ResponseEntity.ok(user);
+    }
+
+    /**
+     * Refresh access token using refresh token
+     * 
+     * @param request containing refresh token
+     * @return new access token
+     */
+    @Operation(summary = "Refresh token", description = "Generate new access token using refresh token")
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
+        String newAccessToken = authService.refreshAccessToken(request.getRefreshToken());
+        
+        // Get current user
+        UserDto user = authService.getCurrentUser();
+        
+        return ResponseEntity.ok(LoginResponse.builder()
+                .token(newAccessToken)
+                .user(user)
+                .build());
+    }
+
+    /**
+     * Logout the current user
+     * 
+     * @param request containing refresh token
+     * @return success response
+     */
+    @Operation(summary = "Logout", description = "Logout the current user and revoke refresh token")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestBody RefreshTokenRequest request) {
+        if (request.getRefreshToken() != null) {
+            authService.revokeRefreshToken(request.getRefreshToken());
+        }
+        return ResponseEntity.ok().build();
     }
 }

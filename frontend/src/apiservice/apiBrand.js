@@ -1,12 +1,12 @@
 import axios from 'axios';
 
 // Base URL for the BrandService API
-const BASE_URL = 'http://localhost:5005/api/brand';
+const BASE_URL = `${import.meta.env.VITE_BACKEND_CATALOG_URL}/api/v1/brands`;
 
 // Function to create a new brand
 export const createBrand = async (brandData) => {
   try {
-    const response = await axios.post("http://localhost:5005/api/brand/add", brandData);
+    const response = await axios.post(`${BASE_URL}/add`, brandData);
     return response.data;
   } catch (error) {
     throw error.response?.data || { success: false, message: 'Error creating brand' };
@@ -16,8 +16,13 @@ export const createBrand = async (brandData) => {
 // Function to get all brands with optional query parameters
 export const getBrands = async (queryParams = {}) => {
   try {
-    const response = await axios.get(BASE_URL, { params: queryParams });
-    return response.data;
+    let url = BASE_URL;
+    if (queryParams.isVisible) {
+      url += '/active';
+      delete queryParams.isVisible;
+    }
+    const response = await axios.get(url, { params: queryParams });
+    return { brands: response.data };
   } catch (error) {
     throw error.response?.data || { success: false, message: 'Error fetching brands' };
   }
@@ -46,7 +51,7 @@ export const updateBrand = async (brandId, brandData) => {
 // Function to delete a brand by ID
 export const deleteBrand = async (brandId) => {
   try {
-    const response = await axios.delete(`http://localhost:5005/api/brand/delete/${brandId}`);
+    const response = await axios.delete(`${BASE_URL}/delete/${brandId}`);
     return response.data;
   } catch (error) {
     throw error.response?.data || { success: false, message: 'Error deleting brand' };

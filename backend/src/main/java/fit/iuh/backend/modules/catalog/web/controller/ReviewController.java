@@ -97,6 +97,15 @@ public class ReviewController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/all")
+    @Operation(summary = "Get all reviews", description = "Get all reviews for admin management")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ReviewDto>> getAllReviews() {
+        List<ReviewDto> reviews = reviewService.getAllReviews();
+        return ResponseEntity.ok(reviews);
+    }
+
     @GetMapping("/pending")
     @Operation(summary = "Get pending reviews", description = "Get all pending reviews for admin approval")
     @SecurityRequirement(name = "bearerAuth")

@@ -3,6 +3,7 @@ package fit.iuh.backend.modules.identity.application.mapper;
 import fit.iuh.backend.modules.identity.application.dto.UserDto;
 import fit.iuh.backend.modules.identity.domain.entity.Role;
 import fit.iuh.backend.modules.identity.domain.entity.User;
+import fit.iuh.backend.modules.identity.domain.entity.UserStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
@@ -27,8 +28,13 @@ public class UserMapper {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .fullName(user.getFullName())
+                .tenNguoiDung(user.getFullName())
+                .quyen(user.getRoles().stream().findFirst()
+                        .map(role -> UserDto.RoleDto.builder().tenQuyen(role.getName()).build())
+                        .orElse(null))
                 .phone(user.getPhone())
                 .status(user.getStatus().name())
+                .locked(user.getStatus() == UserStatus.BANNED)
                 .roles(user.getRoles().stream()
                         .map(Role::getName)
                         .collect(Collectors.toSet()))

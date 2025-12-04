@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import createInstanceAxios from "../services/axios.customize";
+import { formatProductsFromBackend } from "../utils/productMapper";
+
+const axiosCatalog = createInstanceAxios(import.meta.env.VITE_BACKEND_CATALOG_URL);
 
 const useWatchesData = (initialPage = 1, initialLimit = 10) => {
   const [data, setData] = useState({ male: [], female: [], couple: [] });
@@ -12,49 +15,50 @@ const useWatchesData = (initialPage = 1, initialLimit = 10) => {
     female: 0,
     couple: 0,
   });
-
   useEffect(() => {
-    const formatData = (products) =>
-      products.map((watch) => ({
-        id: watch._id,
-        images: watch.hinhAnh.map((img) => img.duLieuAnh || "default-image-url"),
-        image: watch.hinhAnh[0]?.duLieuAnh || "default-image-url",
-        name: watch.tenDH || "Không có tên",
-        price: watch.giaBan || 0,
-        category: watch.danhMuc || "Không rõ",
-        moTa: watch.moTa || "",
-        soLuong: watch.soLuong || 0,
-        thuongHieu: watch.thuongHieu || "Không rõ",
-        maDH: watch.maDH || "Không rõ",
+
+    const formatData = (products) => {
+      // Sử dụng helper function để định dạng sản phẩm
+      const formattedProducts = formatProductsFromBackend(products);
+      // Thêm image chính cho mỗi sản phẩm
+      return formattedProducts.map(product => ({
+        ...product,
+        image: product.images?.[0]?.imageUrl || "https://via.placeholder.com/200x200?text=No+Image",
       }));
+    };
 
     const fetchAllData = async () => {
       setLoading(true);
       setError(null);
 
       try {
+        // Fetch categories dynamically instead of hardcoding
+        const categoriesRes = await axiosCatalog.get('/api/v1/categories/active');
+        const allCategories = categoriesRes || [];
+        const mainCategories = allCategories.filter(cat => !cat.parentId);
+        
+        const categoryMap = {
+          male: mainCategories.find(cat => cat.slug === 'dong-ho-nam')?.id,
+          female: mainCategories.find(cat => cat.slug === 'dong-ho-nu')?.id,
+          couple: mainCategories.find(cat => cat.slug === 'dong-ho-unisex')?.id,
+        };
+
         const [maleRes, femaleRes, coupleRes] = await Promise.all([
-          axios.get(
-            `http://localhost:5004/api/product?page=${page}&limit=${limit}&danhMuc=Nam`
-          ),
-          axios.get(
-            `http://localhost:5004/api/product?page=${page}&limit=${limit}&danhMuc=Nữ`
-          ),
-          axios.get(
-            `http://localhost:5004/api/product?page=${page}&limit=${limit}&danhMuc=Couple`
-          ),
+          categoryMap.male ? axiosCatalog.get('/api/v1/products', { params: { categoryId: categoryMap.male, page: page - 1, size: limit } }) : Promise.resolve({ data: { products: [], totalPages: 0 } }),
+          categoryMap.female ? axiosCatalog.get('/api/v1/products', { params: { categoryId: categoryMap.female, page: page - 1, size: limit } }) : Promise.resolve({ data: { products: [], totalPages: 0 } }),
+          categoryMap.couple ? axiosCatalog.get('/api/v1/products', { params: { categoryId: categoryMap.couple, page: page - 1, size: limit } }) : Promise.resolve({ data: { products: [], totalPages: 0 } }),
         ]);
 
         setData({
-          male: formatData(maleRes.data.productDatas || []),
-          female: formatData(femaleRes.data.productDatas || []),
-          couple: formatData(coupleRes.data.productDatas || []),
+          male: formatData(maleRes?.products || []),
+          female: formatData(femaleRes?.products || []),
+          couple: formatData(coupleRes?.products || []),
         });
 
         setTotalPages({
-          male: maleRes.data.totalPages || 0,
-          female: femaleRes.data.totalPages || 0,
-          couple: coupleRes.data.totalPages || 0,
+          male: maleRes?.totalPages || 0,
+          female: femaleRes?.totalPages || 0,
+          couple: coupleRes?.totalPages || 0,
         });
       } catch (err) {
         console.error("Lỗi khi tải dữ liệu:", err);

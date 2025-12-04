@@ -1,10 +1,10 @@
 import { useNavigate } from "react-router-dom";
-import { HeartOutlined, HeartFilled } from "@ant-design/icons";
 import { useCurrentApp } from "../../context/app.context";
 import { addAccessHistoryApi } from "../../services/api";
+import WishlistButton from "../WishlistButton";
 
 const PopularWatches = ({ watches, title, mx, px }) => {
-  const { favorite, toggleFavorite, user } = useCurrentApp();
+  const { user } = useCurrentApp();
   const navigate = useNavigate();
 
   const handleViewDetail = (watch) => {
@@ -14,73 +14,62 @@ const PopularWatches = ({ watches, title, mx, px }) => {
     navigate(`/product/${watch.id || watch._id}`);
   };
 
-  const isFavorite = (id) => {
-    return favorite.some((item) => (item.id ? item.id : item._id) === id);
-  };
-
   return (
-    <div className={`container mx-auto py-8 ${px ? "" : "px-6"}`}>
-      <h2 className="text-center text-xl font-bold uppercase text-gray-800 mb-6">
+    <section className={`w-full py-8 ${px ? "" : "px-4 sm:px-6 lg:px-8"}`} aria-labelledby={`popular-${title}`}>
+      <h2 id={`popular-${title}`} className="text-center text-2xl sm:text-3xl font-extrabold uppercase text-gray-800 mb-6">
         {title}
       </h2>
-
-      <div
-        className={`grid gap-6 ${
-          mx ? "mx-0" : "mx-20"
-        } grid-cols-2 sm:grid-cols-3 md:grid-cols-4 overflow-hidden`}
-      >
+      <div className={`grid gap-6 ${mx ? "mx-0" : "mx-0"} grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4`}>
         {watches.map((watch) => (
-          <div
+          <article
             key={watch.id || watch._id}
-            className="group flex flex-col items-center text-center cursor-pointer transition-transform duration-300 hover:scale-105"
+            className="group bg-white rounded-2xl border border-[#ffeaea] shadow-md hover:shadow-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:border-[#C40D2E]/70 relative"
             onClick={() => handleViewDetail(watch)}
+            aria-label={`Xem chi tiết ${watch.name}`}
           >
-            <div className="relative w-48 h-48 flex items-center justify-center">
+            <div className="relative w-full h-56 bg-gradient-to-br from-[#fff8f8] to-[#ffeaea] flex items-center justify-center overflow-hidden">
               <img
-                src={watch.image || watch.hinhAnh[0].duLieuAnh}
-                alt={watch.name || watch.tenDH}
-                className="object-cover w-full h-full"
+                src={watch.image || (watch.images && watch.images[0]?.imageUrl) || "https://via.placeholder.com/400x300?text=No+Image"}
+                alt={watch.name}
+                className="object-cover w-full h-full scale-100 group-hover:scale-105 transition-transform duration-300 rounded-t-2xl"
                 loading="lazy"
+                onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/400x300?text=No+Image'; }}
               />
 
-              <button
-                className={`absolute top-2 right-2 text-xl transition-all duration-300 cursor-pointer ${
-                  isFavorite(watch.id || watch._id)
-                    ? "text-red-500"
-                    : "text-gray-500"
-                } hover:text-red-500`}
+              {/* Badge "Mới" hoặc "Hot" */}
+              {watch.isNew && (
+                <span className="absolute top-3 left-3 bg-gradient-to-r from-[#C40D2E] to-[#fbb6b6] text-white text-xs font-bold px-3 py-1 rounded-full shadow-md animate-pulse">Mới</span>
+              )}
+              {watch.isFeatured && !watch.isNew && (
+                <span className="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-red-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md animate-bounce">Hot</span>
+              )}
+
+              <div
+                className="absolute top-3 right-3"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  toggleFavorite(watch);
                 }}
               >
-                {isFavorite(watch.id || watch._id) ? (
-                  <HeartFilled />
-                ) : (
-                  <HeartOutlined />
-                )}
-              </button>
+                <WishlistButton
+                  productId={watch.id || watch._id}
+                  size="default"
+                  showText={false}
+                />
+              </div>
             </div>
 
-            <p className="text-gray-700 text-sm mt-2 w-40 truncate transition-all duration-300 group-hover:scale-105">
-              {watch.name || watch.tenDH}
-            </p>
+            <div className="p-4 text-center flex flex-col gap-1">
+              <h3 className="text-[#C40D2E] text-base md:text-lg font-bold truncate group-hover:underline decoration-[#C40D2E]/40 transition-all duration-200" title={watch.name}>{watch.name}</h3>
 
-            <p className="text-black font-bold text-lg transition-all duration-300 group-hover:scale-105">
-              {watch.price?.toLocaleString("vi-VN", {
-                style: "currency",
-                currency: "VND",
-              })}
-              {watch.giaBan?.toLocaleString("vi-VN", {
-                style: "currency",
-                currency: "VND",
-              })}
-            </p>
-          </div>
+              <p className="text-black font-extrabold text-lg md:text-xl mt-1 group-hover:text-[#C40D2E] transition-colors duration-200">
+                {(watch.price || watch.giaBan)?.toLocaleString("vi-VN", { style: "currency", currency: "VND" })}
+              </p>
+            </div>
+          </article>
         ))}
       </div>
-    </div>
+    </section>
   );
 };
 

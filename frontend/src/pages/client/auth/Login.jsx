@@ -5,41 +5,104 @@ import { useCurrentApp } from "../../../context/app.context";
 import { loginApi } from "../../../services/api";
 import "./Login.css";
 
+// Cookie helper functions
+const setCookie = (name, value, days = 7) => {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; secure; samesite=strict`;
+};
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [isSubmit, setIsSubmit] = useState(false);
-  const { setIsAuthenticated, setUser, messageApi } = useCurrentApp();
+  const { setIsAuthenticated, setUser, messageApi, mergeCart } = useCurrentApp();
 
   const emailInputRef = useRef(null);
 
   const onFinish = async (values) => {
     setIsSubmit(true);
-    const { email, matKhau } = values;
-    const res = await loginApi({
-      email,
-      matKhau,
-    });
-
-    if (res?.data) {
-      setIsAuthenticated(true);
-      setUser(res.data.user);
-      localStorage.setItem("accessToken", res.data.accessToken);
-      messageApi.open({
-        type: "success",
-        content: "Đăng nhập thành công!",
+    const { email, password } = values;
+    try {
+      const res = await loginApi({
+        email,
+        password,
       });
-      navigate("/");
-    } else {
+
+      if (res?.token) {
+        localStorage.setItem("accessToken", res.token);
+        if (res.refreshToken) {
+          setCookie("refreshToken", res.refreshToken, 7); // 7 days
+        }
+        
+        setIsAuthenticated(true);
+        setUser(res.user);
+        
+        // Merge guest cart with user cart after login
+        const guestCart = localStorage.getItem("carts");
+        if (guestCart) {
+          try {
+            const guestCartItems = JSON.parse(guestCart);
+            if (guestCartItems.length > 0) {
+              console.log("Merging guest cart with user cart:", guestCartItems);
+              await mergeCart(guestCartItems);
+            }
+          } catch (error) {
+            console.error("Error merging cart:", error);
+            // Continue login even if cart merge fails
+          }
+        }
+        
+        messageApi.open({
+          type: "success",
+          content: "Đăng nhập thành công!",
+        });
+        navigate("/");
+      } else {
+        messageApi.open({
+          type: "error",
+          content:
+            res.message && Array.isArray(res.message)
+              ? res.message[0]
+              : res.message,
+        });
+      }
+    } catch (error) {
+      console.error('=== Login Error ===');
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      
+      let errorMessage = "Đăng nhập thất bại.";
+      
+      // Special handling for different status codes
+      if (error.response?.status === 403) {
+        // Account is locked/banned
+        errorMessage = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.";
+        console.log('403 Forbidden - Account locked');
+      } else if (error.response?.status === 401) {
+        // Wrong credentials
+        errorMessage = "Email hoặc mật khẩu không chính xác.";
+        console.log('401 Unauthorized - Wrong credentials');
+      } else if (error.response?.data) {
+        // Try to extract message from response
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      }
+      
+      console.log('Displaying error message:', errorMessage);
+      
+      // Display error message
       messageApi.open({
         type: "error",
-        content:
-          res.message && Array.isArray(res.message)
-            ? res.message[0]
-            : res.message,
+        content: errorMessage,
+        duration: 5,
       });
+    } finally {
+      setIsSubmit(false);
     }
-    setIsSubmit(false);
   };
 
   useEffect(() => {
@@ -76,7 +139,7 @@ const LoginPage = () => {
 
               <Form.Item
                 label="Mật khẩu"
-                name="matKhau"
+                name="password"
                 rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
               >
                 <Input.Password

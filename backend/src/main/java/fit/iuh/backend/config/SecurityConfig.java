@@ -56,10 +56,29 @@ public class SecurityConfig {
                         // Public endpoints - Auth
                         .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
                         
+                        // Public endpoints - Orders (Guest checkout)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/guest").permitAll()
+                        
                         // Public endpoints - Products
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
+                        
+                        // Public endpoints - Coupons
+                        .requestMatchers(HttpMethod.POST, "/api/v1/coupons/validate").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/coupons/valid").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/coupons/active").permitAll()
+                        
+                        // Public endpoints - Reviews
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/reviews/*/helpful").permitAll()
+                        
+                        // Public endpoints - Inventory
+                        .requestMatchers(HttpMethod.GET, "/api/v1/inventory/**").permitAll()
+                        
+                        // Public endpoints - Payment callbacks (MoMo return and IPN)
+                        .requestMatchers("/api/v1/payments/return", "/api/v1/payments/ipn/**").permitAll()
+                        .requestMatchers("/api/v1/payments/mock-success/**").permitAll()
                         
                         // Swagger/OpenAPI endpoints
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
@@ -89,6 +108,7 @@ public class SecurityConfig {
         // Allow frontend origins
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",    // React default
+                "http://localhost:3001",    // React/Vite on port 3001
                 "http://localhost:4200",    // Angular default
                 "http://localhost:5173",    // Vite default
                 "http://localhost:8081"     // Other frontend ports
@@ -107,7 +127,8 @@ public class SecurityConfig {
                 "Accept",
                 "Origin",
                 "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
+                "Access-Control-Request-Headers",
+                "delay"
         ));
         
         // Expose headers

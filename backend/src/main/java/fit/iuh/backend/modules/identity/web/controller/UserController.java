@@ -130,9 +130,10 @@ public class UserController {
     public ResponseEntity<UserListResponse> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String search) {
-        log.info("UserController: getAllUsers called with page={}, size={}, search={}", page, size, search);
-        UserListResponse users = userService.getAllUsers(page, size, search);
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String role) {
+        log.info("UserController: getAllUsers called with page={}, size={}, search={}, role={}", page, size, search, role);
+        UserListResponse users = userService.getAllUsers(page, size, search, role);
         log.info("UserController: getAllUsers returning {} users for page {}", users.getUsers().size(), page);
         return ResponseEntity.ok(users);
     }

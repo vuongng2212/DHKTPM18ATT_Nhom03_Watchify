@@ -163,12 +163,12 @@ public class UserService {
      * Get all users with pagination and search
      */
     @Transactional(readOnly = true)
-    public UserListResponse getAllUsers(int page, int size, String search) {
+    public UserListResponse getAllUsers(int page, int size, String search, String role) {
         Pageable pageable = PageRequest.of(page, size);
 
         Page<User> userPage;
-        if (StringUtils.hasText(search)) {
-            userPage = userRepository.searchByKeyword(search, pageable);
+        if (StringUtils.hasText(search) || StringUtils.hasText(role)) {
+            userPage = userRepository.searchByKeywordAndRole(search, role, pageable);
         } else {
             userPage = userRepository.findAll(pageable);
         }

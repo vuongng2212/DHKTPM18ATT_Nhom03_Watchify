@@ -7,6 +7,7 @@ import fit.iuh.backend.modules.identity.domain.repository.UserRepository;
 import fit.iuh.backend.modules.order.application.dto.CreateGuestOrderRequest;
 import fit.iuh.backend.modules.order.application.dto.CreateOrderRequest;
 import fit.iuh.backend.modules.order.application.dto.OrderDto;
+import fit.iuh.backend.modules.order.application.dto.OrderFilterRequest;
 import fit.iuh.backend.modules.order.application.dto.OrderItemRequest;
 import fit.iuh.backend.modules.order.application.dto.OrderListResponse;
 import fit.iuh.backend.modules.order.application.mapper.OrderMapper;
@@ -29,6 +30,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -192,7 +195,92 @@ public class OrderService {
                 .build();
     }
 
+    /**
+     * Get all orders with filtering and pagination (Admin)
+     * 
+     * @param filter Filter criteria
+     * @param page Page number (0-based)
+     * @param size Page size
+     * @return Paginated and filtered orders
+     */
+    @Transactional(readOnly = true)
+    public OrderListResponse getAllOrdersWithFilter(OrderFilterRequest filter, int page, int size) {
+        log.info("OrderService: getAllOrdersWithFilter - page={}, size={}, filter={}", 
+                 page, size, filter);
+        
+        // Build Sort
+        Sort sort = buildSort(filter.getSortBy(), filter.getSortDirection());
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        // Convert LocalDate to LocalDateTime for time range
+        LocalDateTime fromDateTime = filter.getFromDate() != null 
+            ? LocalDateTime.of(filter.getFromDate(), LocalTime.MIN) 
+            : null;
+        
+        LocalDateTime toDateTime = filter.getToDate() != null 
+            ? LocalDateTime.of(filter.getToDate(), LocalTime.MAX) 
+            : null;
+        
+        // Execute search query
+        Page<Order> orderPage = orderRepository.searchOrders(
+            filter.getKeyword(),
+            filter.getStatus(),
+            filter.getPaymentMethod(),
+            fromDateTime,
+            toDateTime,
+            pageable
+        );
+        
+        log.info("OrderService: Found {} orders matching filters", orderPage.getTotalElements());
+        
+        // Map to DTOs
+        List<OrderDto> orderDtos = orderMapper.toDtoList(orderPage.getContent());
+        
+        // Build response
+        return OrderListResponse.builder()
+                .orders(orderDtos)
+                .currentPage(orderPage.getNumber())
+                .totalPages(orderPage.getTotalPages())
+                .totalElements(orderPage.getTotalElements())
+                .hasNext(orderPage.hasNext())
+                .hasPrevious(orderPage.hasPrevious())
+                .build();
+    }
+    
+    /**
+     * Build Sort object from sortBy and sortDirection
+     */
+    private Sort buildSort(String sortBy, String sortDirection) {
+        // Default sort
+        if (sortBy == null || sortBy.isEmpty()) {
+            sortBy = "orderDate";
+        }
+        
+        if (sortDirection == null || sortDirection.isEmpty()) {
+            sortDirection = "desc";
+        }
+        
+        // Validate sortBy field
+        List<String> validSortFields = List.of("orderDate", "totalAmount", "status");
+        if (!validSortFields.contains(sortBy)) {
+            log.warn("Invalid sortBy field: {}, using default 'orderDate'", sortBy);
+            sortBy = "orderDate";
+        }
+        
+        // Create Sort
+        Sort.Direction direction = sortDirection.equalsIgnoreCase("asc") 
+            ? Sort.Direction.ASC 
+            : Sort.Direction.DESC;
+        
+        return Sort.by(direction, sortBy);
+    }
+
+    /**
+     * Get all orders without filters (deprecated - use getAllOrdersWithFilter instead)
+     */
+    @Deprecated
     public OrderListResponse getAllOrders(int page, int size) {
+        log.warn("OrderService: getAllOrders (deprecated) called, consider using getAllOrdersWithFilter");
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "orderDate"));
         Page<Order> orderPage = orderRepository.findAll(pageable);
 

@@ -4,15 +4,18 @@ import fit.iuh.backend.modules.identity.domain.repository.UserRepository;
 import fit.iuh.backend.modules.order.application.dto.CreateGuestOrderRequest;
 import fit.iuh.backend.modules.order.application.dto.CreateOrderRequest;
 import fit.iuh.backend.modules.order.application.dto.OrderDto;
+import fit.iuh.backend.modules.order.application.dto.OrderFilterRequest;
 import fit.iuh.backend.modules.order.application.dto.OrderListResponse;
 import fit.iuh.backend.modules.order.application.dto.UpdateOrderStatusRequest;
 import fit.iuh.backend.modules.order.application.service.OrderService;
+import fit.iuh.backend.modules.order.domain.entity.OrderStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -72,15 +76,61 @@ public class OrderController {
     }
 
     @GetMapping("/all")
-    @Operation(summary = "Get all orders (Admin)", description = "Get paginated list of all orders for admin")
+    @Operation(
+        summary = "Get all orders (Admin)", 
+        description = "Get paginated list of all orders with optional filtering by keyword, status, payment method, and date range"
+    )
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OrderListResponse> getAllOrders(
-            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size
+            @Parameter(description = "Page number (0-based)") 
+            @RequestParam(defaultValue = "0") int page,
+            
+            @Parameter(description = "Page size") 
+            @RequestParam(defaultValue = "10") int size,
+            
+            @Parameter(description = "Search keyword (order ID, customer name, or email)") 
+            @RequestParam(required = false) String keyword,
+            
+            @Parameter(description = "Filter by order status") 
+            @RequestParam(required = false) OrderStatus status,
+            
+            @Parameter(description = "Filter by payment method (COD, VNPAY, MOMO)") 
+            @RequestParam(required = false) String paymentMethod,
+            
+            @Parameter(description = "Filter orders from this date (format: yyyy-MM-dd)") 
+            @RequestParam(required = false) 
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            
+            @Parameter(description = "Filter orders to this date (format: yyyy-MM-dd)") 
+            @RequestParam(required = false) 
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            
+            @Parameter(description = "Sort by field (orderDate, totalAmount, status)") 
+            @RequestParam(required = false, defaultValue = "orderDate") String sortBy,
+            
+            @Parameter(description = "Sort direction (asc, desc)") 
+            @RequestParam(required = false, defaultValue = "desc") String sortDirection
     ) {
-        log.info("OrderController: getAllOrders called with page={}, size={}", page, size);
-        OrderListResponse response = orderService.getAllOrders(page, size);
-        log.info("OrderController: getAllOrders returning {} orders for page {}", response.getOrders().size(), page);
+        log.info("OrderController: getAllOrders called with filters - page={}, size={}, keyword={}, status={}, paymentMethod={}, fromDate={}, toDate={}", 
+                 page, size, keyword, status, paymentMethod, fromDate, toDate);
+        
+        // Build filter request
+        OrderFilterRequest filter = OrderFilterRequest.builder()
+            .keyword(keyword)
+            .status(status)
+            .paymentMethod(paymentMethod)
+            .fromDate(fromDate)
+            .toDate(toDate)
+            .sortBy(sortBy)
+            .sortDirection(sortDirection)
+            .build();
+        
+        // Get filtered orders
+        OrderListResponse response = orderService.getAllOrdersWithFilter(filter, page, size);
+        
+        log.info("OrderController: Returning {} orders for page {}", 
+                 response.getOrders().size(), page);
+        
         return ResponseEntity.ok(response);
     }
 

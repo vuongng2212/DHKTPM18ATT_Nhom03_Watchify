@@ -45,11 +45,16 @@ export const resetPasswordApi = ({ email, matKhau }) => {
   return axiosUser.post("/api/auth/resetPassword", { email, matKhau });
 };
 
-export const getUsersApi = (page = 1, size = 10, search = "") => {
-  console.log(`📥 [API] Fetching users - page: ${page}, size: ${size}, search: "${search}"`);
-  return axiosUser.get(
-    `/api/v1/users?page=${page - 1}&size=${size}&search=${search || ""}`
-  )
+export const getUsersApi = (page = 1, size = 10, search = "", role = null) => {
+  console.log(`📥 [API] Fetching users - page: ${page}, size: ${size}, search: "${search}", role: "${role}"`);
+  
+  const params = new URLSearchParams();
+  params.append('page', page - 1);
+  params.append('size', size);
+  if (search) params.append('search', search);
+  if (role) params.append('role', role);
+  
+  return axiosUser.get(`/api/v1/users?${params.toString()}`)
     .then(response => {
       console.log(`✅ [API] Users fetched successfully:`, response);
       console.log(`📊 [API] Number of users: ${response.users?.length || 0}`);
@@ -151,8 +156,53 @@ export const getOrdersApi = (page = 1, limit = 10) => {
   return axiosOrder.get(`/api/v1/orders?page=${page}&limit=${limit}`);
 };
 
-export const getAllOrdersApi = (page = 1, limit = 10) => {
-  return axiosOrder.get(`/api/v1/orders/all?page=${page}&limit=${limit}`);
+/**
+ * Get all orders with filtering and pagination (Admin)
+ * 
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number (0-based for backend)
+ * @param {number} params.size - Page size
+ * @param {string} [params.keyword] - Search keyword
+ * @param {string} [params.status] - Order status filter
+ * @param {string} [params.paymentMethod] - Payment method filter
+ * @param {string} [params.fromDate] - From date (yyyy-MM-dd)
+ * @param {string} [params.toDate] - To date (yyyy-MM-dd)
+ * @param {string} [params.sortBy] - Sort field
+ * @param {string} [params.sortDirection] - Sort direction (asc/desc)
+ * @returns {Promise} Order list response
+ */
+export const getAllOrdersApi = (params = {}) => {
+  console.log('📥 [API] Fetching orders with params:', params);
+  
+  // Build query string
+  const queryParams = new URLSearchParams();
+  
+  // Pagination (required)
+  queryParams.append('page', params.page ?? 0);
+  queryParams.append('size', params.size ?? 10);
+  
+  // Optional filters
+  if (params.keyword) queryParams.append('keyword', params.keyword);
+  if (params.status) queryParams.append('status', params.status);
+  if (params.paymentMethod) queryParams.append('paymentMethod', params.paymentMethod);
+  if (params.fromDate) queryParams.append('fromDate', params.fromDate);
+  if (params.toDate) queryParams.append('toDate', params.toDate);
+  if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+  if (params.sortDirection) queryParams.append('sortDirection', params.sortDirection);
+  
+  const url = `/api/v1/orders/all?${queryParams.toString()}`;
+  console.log('📍 [API] Request URL:', url);
+  
+  return axiosOrder.get(url)
+    .then(response => {
+      console.log('✅ [API] Orders fetched successfully:', response);
+      console.log('📊 [API] Total orders:', response.totalElements);
+      return response;
+    })
+    .catch(error => {
+      console.error('❌ [API] Failed to fetch orders:', error);
+      throw error;
+    });
 };
 
 export const updateOrderStatusApi = (orderId, trangThaiDonHang) => {
@@ -209,8 +259,18 @@ export const markReviewHelpfulApi = (reviewId) => {
 };
 
 // Admin review APIs
-export const getAllReviewsApi = () => {
-  return axiosReview.get("/api/v1/reviews/all");
+export const getAllReviewsApi = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.page !== undefined) queryParams.append('page', params.page);
+  if (params.size !== undefined) queryParams.append('size', params.size);
+  if (params.keyword) queryParams.append('keyword', params.keyword);
+  if (params.status) queryParams.append('status', params.status);
+  if (params.rating) queryParams.append('rating', params.rating);
+  if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+  if (params.sortDirection) queryParams.append('sortDirection', params.sortDirection);
+  
+  const queryString = queryParams.toString();
+  return axiosReview.get(`/api/v1/reviews/all${queryString ? '?' + queryString : ''}`);
 };
 
 export const getPendingReviewsApi = () => {

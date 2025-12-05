@@ -1,6 +1,8 @@
 package fit.iuh.backend.modules.catalog.domain.repository;
 
 import fit.iuh.backend.modules.catalog.domain.entity.Review;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -50,4 +52,24 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
      * Check if user has reviewed a product
      */
     boolean existsByProductIdAndUserId(UUID productId, UUID userId);
+
+    /**
+     * Search reviews with filters and pagination
+     */
+    @Query("SELECT r FROM Review r WHERE " +
+           "(:keyword IS NULL OR " +
+           "LOWER(r.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(r.content) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:productId IS NULL OR r.productId = :productId) AND " +
+           "(:userId IS NULL OR r.userId = :userId) AND " +
+           "(:status IS NULL OR r.status = :status) AND " +
+           "(:rating IS NULL OR r.rating = :rating)")
+    Page<Review> searchReviews(
+            @Param("keyword") String keyword,
+            @Param("productId") UUID productId,
+            @Param("userId") UUID userId,
+            @Param("status") String status,
+            @Param("rating") Integer rating,
+            Pageable pageable
+    );
 }

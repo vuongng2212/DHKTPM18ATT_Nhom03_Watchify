@@ -1,6 +1,8 @@
 package fit.iuh.backend.modules.catalog.application.service;
 
 import fit.iuh.backend.modules.catalog.application.dto.ReviewDto;
+import fit.iuh.backend.modules.catalog.application.dto.ReviewFilterRequest;
+import fit.iuh.backend.modules.catalog.application.dto.ReviewListResponse;
 import fit.iuh.backend.modules.catalog.application.mapper.ReviewMapper;
 import fit.iuh.backend.modules.catalog.domain.entity.Review;
 import fit.iuh.backend.modules.catalog.domain.repository.ReviewRepository;
@@ -9,8 +11,13 @@ import fit.iuh.backend.sharedkernel.exception.ResourceNotFoundException;
 import fit.iuh.backend.sharedkernel.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -84,6 +91,52 @@ public class ReviewService {
         log.info("Created review: {} for product: {} by user: {}", review.getId(), productId, userId);
         
         return reviewMapper.toDto(review);
+    }
+
+    /**
+     * Get all reviews with filters and pagination (admin)
+     */
+    public ReviewListResponse getAllReviewsWithFilter(ReviewFilterRequest filter, int page, int size) {
+        // Build sort
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        if (StringUtils.hasText(filter.getSortBy())) {
+            Sort.Direction direction = "asc".equalsIgnoreCase(filter.getSortDirection()) 
+                ? Sort.Direction.ASC 
+                : Sort.Direction.DESC;
+            sort = Sort.by(direction, filter.getSortBy());
+        }
+        
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        // Search with filters
+        Page<Review> reviewPage = reviewRepository.searchReviews(
+            filter.getKeyword(),
+            filter.getProductId(),
+            filter.getUserId(),
+            filter.getStatus(),
+            filter.getRating(),
+            pageable
+        );
+        
+        // Map to DTOs with user names
+        List<ReviewDto> reviewDtos = reviewPage.getContent().stream()
+            .map(review -> {
+                String userFullName = userRepository.findById(review.getUserId())
+                    .map(user -> user.getFirstName() + " " + user.getLastName())
+                    .orElse("Unknown User");
+                return reviewMapper.toDtoWithUserName(review, userFullName);
+            })
+            .toList();
+        
+        return ReviewListResponse.builder()
+            .reviews(reviewDtos)
+            .totalElements(reviewPage.getTotalElements())
+            .totalPages(reviewPage.getTotalPages())
+            .currentPage(page)
+            .pageSize(size)
+            .hasNext(reviewPage.hasNext())
+            .hasPrevious(reviewPage.hasPrevious())
+            .build();
     }
 
     /**

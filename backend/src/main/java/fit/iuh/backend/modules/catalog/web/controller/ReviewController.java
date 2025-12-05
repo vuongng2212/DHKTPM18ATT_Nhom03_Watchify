@@ -1,6 +1,8 @@
 package fit.iuh.backend.modules.catalog.web.controller;
 
 import fit.iuh.backend.modules.catalog.application.dto.ReviewDto;
+import fit.iuh.backend.modules.catalog.application.dto.ReviewFilterRequest;
+import fit.iuh.backend.modules.catalog.application.dto.ReviewListResponse;
 import fit.iuh.backend.modules.catalog.application.service.ReviewService;
 import fit.iuh.backend.modules.identity.domain.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -98,11 +100,31 @@ public class ReviewController {
     }
 
     @GetMapping("/all")
-    @Operation(summary = "Get all reviews", description = "Get all reviews for admin management")
+    @Operation(summary = "Get all reviews", description = "Get paginated and filtered reviews for admin management")
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<ReviewDto>> getAllReviews() {
-        List<ReviewDto> reviews = reviewService.getAllReviews();
+    public ResponseEntity<ReviewListResponse> getAllReviews(
+            @Parameter(description = "Search keyword") @RequestParam(required = false) String keyword,
+            @Parameter(description = "Product ID") @RequestParam(required = false) UUID productId,
+            @Parameter(description = "User ID") @RequestParam(required = false) UUID userId,
+            @Parameter(description = "Review status") @RequestParam(required = false) String status,
+            @Parameter(description = "Rating (1-5)") @RequestParam(required = false) Integer rating,
+            @Parameter(description = "Sort by field") @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
+            @Parameter(description = "Sort direction (asc, desc)") @RequestParam(required = false, defaultValue = "desc") String sortDirection,
+            @Parameter(description = "Page number (0-based)") @RequestParam(required = false, defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(required = false, defaultValue = "10") int size
+    ) {
+        ReviewFilterRequest filter = ReviewFilterRequest.builder()
+                .keyword(keyword)
+                .productId(productId)
+                .userId(userId)
+                .status(status)
+                .rating(rating)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .build();
+        
+        ReviewListResponse reviews = reviewService.getAllReviewsWithFilter(filter, page, size);
         return ResponseEntity.ok(reviews);
     }
 

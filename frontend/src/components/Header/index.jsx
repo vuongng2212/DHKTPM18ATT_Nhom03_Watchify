@@ -24,7 +24,6 @@ const deleteCookie = (name) => {
 
 const Header = () => {
   const {
-    favorite,
     wishlistCount,
     user,
     carts,
@@ -39,6 +38,7 @@ const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoutStatus, setLogoutStatus] = useState({ type: "", message: "" });
   const [visibleBrands, setVisibleBrands] = useState([]);
+  const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     const fetchVisibleBrands = async () => {
@@ -85,6 +85,15 @@ const Header = () => {
       deleteCookie("refreshToken");
       messageApi.error({ content: "Đã đăng xuất khỏi hệ thống!", duration: 2 });
       navigate("/");
+    }
+  };
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter' || e.type === 'click') {
+      if (searchText.trim()) {
+        navigate(`/search?q=${encodeURIComponent(searchText.trim())}`);
+        setSearchText("");
+      }
     }
   };
 
@@ -188,8 +197,17 @@ const Header = () => {
 
           <div className="flex items-center space-x-4">
             <div className="hidden md:block relative w-72">
-              <input type="text" placeholder="Tìm sản phẩm hoặc thương hiệu" className="w-full border-none rounded-xl px-10 py-2 text-black text-sm focus:outline-none bg-[#E7E7E8]" />
-              <span className="absolute left-2 top-2 cursor-pointer"><img width="20px" src={searchIcon} alt="Search Icon" /></span>
+              <input 
+                type="text" 
+                placeholder="Tìm sản phẩm hoặc thương hiệu" 
+                className="w-full border-none rounded-xl px-10 py-2 text-black text-sm focus:outline-none bg-[#E7E7E8]"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                onKeyPress={handleSearch}
+              />
+              <span className="absolute left-2 top-2 cursor-pointer" onClick={handleSearch}>
+                <img width="20px" src={searchIcon} alt="Search Icon" />
+              </span>
             </div>
 
             <div className="flex items-center space-x-4">

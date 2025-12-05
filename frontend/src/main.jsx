@@ -10,6 +10,7 @@ import HomePage from "./pages/client/Home";
 import MenPage from "./pages/client/Men";
 import WomenPage from "./pages/client/Women";
 import CouplePage from "./pages/client/Couple";
+import SearchResults from "./pages/client/SearchResults";
 import ContactPage from "./pages/client/Contact";
 import CartPage from "./pages/client/Cart";
 import ErrorPage from "./pages/client/Error";
@@ -63,12 +64,28 @@ const router = createBrowserRouter([
         element: <MenPage />,
       },
       {
+        path: "/men/:brandSlug",
+        element: <MenPage />,
+      },
+      {
         path: "/women",
+        element: <WomenPage />,
+      },
+      {
+        path: "/women/:brandSlug",
         element: <WomenPage />,
       },
       {
         path: "/couple",
         element: <CouplePage />,
+      },
+      {
+        path: "/couple/:brandSlug",
+        element: <CouplePage />,
+      },
+      {
+        path: "/search",
+        element: <SearchResults />,
       },
       {
         path: "/contact",

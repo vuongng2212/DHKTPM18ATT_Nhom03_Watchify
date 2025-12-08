@@ -79,6 +79,9 @@ public class SecurityConfig {
                         // Public endpoints - Payment callbacks (MoMo return and IPN)
                         .requestMatchers("/api/v1/payments/return", "/api/v1/payments/ipn/**").permitAll()
                         .requestMatchers("/api/v1/payments/mock-success/**").permitAll()
+
+                        // Public endpoints - AI assistant
+                        .requestMatchers(HttpMethod.POST, "/api/v1/ai/chat").permitAll()
                         
                         // Swagger/OpenAPI endpoints
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

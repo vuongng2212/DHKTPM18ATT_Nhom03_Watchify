@@ -175,6 +175,26 @@ public class ProductService {
     }
 
     /**
+     * Get all active products with their catalog metadata
+     */
+    public List<ProductDto> getAllActiveProducts() {
+        List<Product> products = productRepository.findByStatus(ProductStatus.ACTIVE);
+
+        return products.stream()
+            .map(product -> {
+                CategoryDto categoryDto = getCategoryDto(product.getCategoryId());
+                BrandDto brandDto = getBrandDto(product.getBrandId());
+                List<ProductImageDto> images = productImageMapper.toDtoList(
+                    productImageRepository.findByProductIdOrderByDisplayOrderAsc(product.getId())
+                );
+                return productMapper.toDtoWithDetails(
+                    product, categoryDto, brandDto, images, null, null, null
+                );
+            })
+            .toList();
+    }
+
+    /**
      * Increment view count
      */
     @Transactional

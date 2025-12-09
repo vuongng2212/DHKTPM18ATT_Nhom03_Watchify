@@ -3,7 +3,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import "./utils/chartConfig"; // Import Chart.js configuration globally
-import Layout from "./components/Layout";
+import Layout from "./components/Layout/index.jsx";
 import AdminLayout from "./components/AdminLayout";
 import PaymentResult from "./components/PaymentResult";
 import HomePage from "./pages/client/Home";

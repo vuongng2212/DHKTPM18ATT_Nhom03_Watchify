@@ -1,0 +1,281 @@
+@startuml Order and Payment Modules - Class Diagram
+
+!define ENTITY_COLOR #FFF3E0
+!define ENUM_COLOR #FFF9C4
+!define VALUE_COLOR #FCE4EC
+
+skinparam class {
+    BackgroundColor ENTITY_COLOR
+    BorderColor #E65100
+    ArrowColor #D84315
+    FontSize 11
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+
+title Order and Payment Modules - Watchify E-commerce System
+
+package "Order Module" {
+    
+    class Order <<Entity, Aggregate Root>> {
+        - UUID id
+        - UUID userId
+        - BigDecimal totalAmount
+        - UUID couponId
+        - String couponCode
+        - BigDecimal discountAmount
+        - BigDecimal finalAmount
+        - OrderStatus status
+        - PaymentMethod paymentMethod
+        - String shippingAddress
+        - String billingAddress
+        - String notes
+        - LocalDateTime orderDate
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + calculateTotal(): void
+        + applyDiscount(BigDecimal amount): void
+        + canCancel(): boolean
+        + canComplete(): boolean
+        + isPaymentPending(): boolean
+    }
+    
+    class OrderItem <<Entity>> {
+        - UUID id
+        - UUID orderId
+        - UUID productId
+        - String productName
+        - String productSku
+        - BigDecimal unitPrice
+        - Integer quantity
+        - BigDecimal totalPrice
+        - LocalDateTime createdAt
+        --
+        + calculateItemTotal(): void
+        + getSnapshot(): ProductSnapshot
+    }
+    
+    enum OrderStatus <<Enumeration>> ENUM_COLOR {
+        PENDING
+        PENDING_PAYMENT
+        CONFIRMED
+        PROCESSING
+        SHIPPING
+        COMPLETED
+        CANCELLED
+        PAYMENT_FAILED
+        REFUNDED
+        --
+        + isCancellable(): boolean
+        + isCompleted(): boolean
+        + canTransitionTo(OrderStatus): boolean
+    }
+    
+    enum PaymentMethod <<Enumeration>> ENUM_COLOR {
+        COD
+        MOMO
+        BANK_TRANSFER
+        VNPAY
+        --
+        + requiresOnlinePayment(): boolean
+        + getDisplayName(): String
+    }
+}
+
+package "Payment Module" {
+    
+    class Payment <<Entity>> {
+        - UUID id
+        - UUID orderId {unique}
+        - BigDecimal amount
+        - PaymentStatus status
+        - PaymentMethod paymentMethod
+        - String transactionId
+        - LocalDateTime paymentDate
+        - String notes
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + isPaid(): boolean
+        + isFailed(): boolean
+        + canRefund(): boolean
+        + markAsPaid(): void
+        + markAsFailed(): void
+    }
+    
+    enum PaymentStatus <<Enumeration>> ENUM_COLOR {
+        PENDING
+        PROCESSING
+        COMPLETED
+        FAILED
+        REFUNDED
+        CANCELLED
+        --
+        + isSuccessful(): boolean
+        + isFinal(): boolean
+    }
+}
+
+package "Promotion Module" {
+    
+    class Coupon <<Entity>> {
+        - UUID id
+        - String code {unique}
+        - String description
+        - DiscountType discountType
+        - BigDecimal discountValue
+        - BigDecimal minOrderAmount
+        - BigDecimal maxDiscountAmount
+        - Integer usageLimit
+        - Integer usedCount
+        - Integer perUserLimit
+        - LocalDateTime validFrom
+        - LocalDateTime validTo
+        - Boolean isActive
+        - String createdBy
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + isValid(): boolean
+        + canApplyToOrder(BigDecimal amount): boolean
+        + calculateDiscount(BigDecimal amount): BigDecimal
+        + incrementUsageCount(): void
+        + decrementUsageCount(): void
+        + hasReachedLimit(): boolean
+        + getRemainingUsage(): Integer
+        + isExpired(): boolean
+        + isNotStarted(): boolean
+        + getDiscountDescription(): String
+    }
+    
+    class CouponUsage <<Entity>> {
+        - UUID id
+        - UUID couponId
+        - UUID userId
+        - UUID orderId
+        - BigDecimal discountAmount
+        - LocalDateTime usedAt
+        --
+        + isValid(): boolean
+    }
+    
+    enum DiscountType <<Enumeration>> ENUM_COLOR {
+        PERCENTAGE
+        FIXED_AMOUNT
+        --
+        + getSymbol(): String
+    }
+}
+
+' Relationships - Order Module
+Order "1" *-- "1..*" OrderItem : contains
+Order --> OrderStatus : has
+Order --> PaymentMethod : uses
+
+' Relationships - Payment Module
+Order "1" -- "0..1" Payment : paid via
+Payment --> PaymentStatus : has
+Payment --> PaymentMethod : uses
+
+' Relationships - Promotion Module
+Order "*" ..> "0..1" Coupon : applies\n{couponId}
+Coupon "1" -- "0..*" CouponUsage : tracked by
+CouponUsage "*" ..> "1" Order : used in\n{orderId}
+Coupon --> DiscountType : has
+
+' External References (dashed)
+Order "*" ..> "1" User : placed by\n{userId}
+OrderItem "*" ..> "1" Product : references\n{productId}
+CouponUsage "*" ..> "1" User : used by\n{userId}
+
+' Notes
+note right of Order
+    **Aggregate Root**
+    - Stores address as TEXT snapshot
+    - Immutable after creation
+    - Status transitions controlled
+    - couponId optional for discounts
+    - finalAmount = totalAmount - discountAmount
+    - Rich domain logic for state machine
+end note
+
+note right of OrderItem
+    **Owned Entity**
+    - Snapshot pattern for product info
+    - Stores productName, productSku, unitPrice
+    - Prevents history corruption if product changes
+    - totalPrice pre-calculated for performance
+    - No direct navigation to Product
+end note
+
+note bottom of Payment
+    **One-to-One with Order**
+    - Created after order placement
+    - transactionId from payment gateway
+    - Status tracks payment lifecycle
+    - Immutable after completion
+    - Critical for order fulfillment
+end note
+
+note right of Coupon
+    **Rich Business Entity**
+    - Code must be unique and uppercase
+    - Two discount types: PERCENTAGE or FIXED
+    - Time-bounded validity
+    - Usage tracking prevents fraud
+    - Per-user limit prevents abuse
+    - Complex validation rules
+end note
+
+note bottom of CouponUsage
+    **Audit Trail**
+    - Tracks each coupon redemption
+    - Links user, coupon, and order
+    - Prevents duplicate usage
+    - Records discount amount applied
+    - Enables usage analytics
+end note
+
+' State Machine Note
+note as OrderStateMachine
+    **Order Status State Machine:**
+    PENDING → PENDING_PAYMENT (COD skip)
+    PENDING_PAYMENT → CONFIRMED (payment success)
+    PENDING_PAYMENT → PAYMENT_FAILED (payment fail)
+    CONFIRMED → PROCESSING (admin action)
+    PROCESSING → SHIPPING (dispatched)
+    SHIPPING → COMPLETED (delivered)
+    Any → CANCELLED (before SHIPPING)
+    COMPLETED → REFUNDED (customer return)
+end note
+
+OrderStateMachine .. OrderStatus
+
+' Legend
+legend right
+    **Key Patterns:**
+    - Snapshot Pattern: OrderItem stores product data
+    - State Machine: Order status transitions
+    - Aggregate Pattern: Order owns OrderItems
+    - Audit Trail: CouponUsage tracks redemptions
+    
+    **Implementation Details:**
+    - All foreign keys stored as UUID
+    - No bidirectional JPA relationships
+    - Addresses stored as JSON/TEXT
+    - BigDecimal for monetary precision
+    - Enums stored as STRING in DB
+    
+    **Business Rules:**
+    1. Order cannot be modified after creation
+    2. Payment required before CONFIRMED (except COD)
+    3. Coupon validated at checkout
+    4. Order cancellation only before SHIPPING
+    5. Inventory reserved on order creation
+endlegend
+
+@enduml

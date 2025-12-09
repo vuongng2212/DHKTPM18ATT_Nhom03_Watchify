@@ -58,6 +58,7 @@ public class GeminiChatService {
                 .productCount(products.size())
                 .build();
     }
+   
 
     private void validateConfiguration() {
         if (!StringUtils.hasText(geminiProperties.getApiKey())) {

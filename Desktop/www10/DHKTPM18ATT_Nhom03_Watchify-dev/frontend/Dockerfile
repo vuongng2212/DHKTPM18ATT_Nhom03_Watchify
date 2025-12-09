@@ -1,0 +1,40 @@
+# Build stage
+FROM node:18 AS build
+
+ARG VITE_BACKEND_CATALOG_URL
+ENV VITE_BACKEND_CATALOG_URL=$VITE_BACKEND_CATALOG_URL
+
+ARG VITE_BACKEND_USER_URL
+ENV VITE_BACKEND_USER_URL=$VITE_BACKEND_USER_URL
+
+ARG VITE_BACKEND_ORDER_URL
+ENV VITE_BACKEND_ORDER_URL=$VITE_BACKEND_ORDER_URL
+
+ARG VITE_BACKEND_REVIEW_URL
+ENV VITE_BACKEND_REVIEW_URL=$VITE_BACKEND_REVIEW_URL
+
+ARG VITE_BACKEND_CHATBOT_URL
+ENV VITE_BACKEND_CHATBOT_URL=$VITE_BACKEND_CHATBOT_URL
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built app
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

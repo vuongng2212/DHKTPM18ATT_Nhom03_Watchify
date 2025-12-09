@@ -1,0 +1,47 @@
+post:
+  tags:
+    - Auth
+  summary: Đăng ký tài khoản mới
+  description: Cho phép người dùng mới tạo một tài khoản bằng email và mật khẩu.
+  operationId: registerUser
+  requestBody:
+    description: Thông tin cần thiết để đăng ký tài khoản.
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - email
+            - password
+            - first_name
+            - last_name
+          properties:
+            email:
+              type: string
+              format: email
+              example: "newuser@example.com"
+            password:
+              type: string
+              format: password
+              description: Mật khẩu phải có ít nhất 8 ký tự.
+              example: "password123"
+            first_name:
+              type: string
+              example: "New"
+            last_name:
+              type: string
+              example: "User"
+  responses:
+    '201':
+      description: Tài khoản được tạo thành công.
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/User.yaml'
+    '400':
+      description: Dữ liệu không hợp lệ (ví dụ: email đã tồn tại, mật khẩu yếu).
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/ErrorResponse.yaml'

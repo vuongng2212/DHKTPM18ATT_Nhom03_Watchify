@@ -1,0 +1,60 @@
+services:
+  db:
+    image: mariadb:10.11
+    container_name: watchify-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: watchify
+      MYSQL_USER: watchify
+      MYSQL_PASSWORD: password
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - watchify-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: watchify-backend
+    ports:
+      - "8888:8888"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: watchify
+      DB_USER: watchify
+      DB_PASSWORD: password
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - watchify-network
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_BACKEND_CATALOG_URL: http://localhost:8888
+        VITE_BACKEND_USER_URL: http://localhost:8888
+        VITE_BACKEND_ORDER_URL: http://localhost:8888
+        VITE_BACKEND_REVIEW_URL: http://localhost:8888
+        VITE_BACKEND_CHATBOT_URL: http://localhost:8888
+    container_name: watchify-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    networks:
+      - watchify-network
+
+volumes:
+  db_data:
+
+networks:
+  watchify-network:
+    driver: bridge

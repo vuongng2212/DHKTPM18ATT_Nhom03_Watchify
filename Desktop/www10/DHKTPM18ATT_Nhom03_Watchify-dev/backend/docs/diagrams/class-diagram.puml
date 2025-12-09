@@ -1,0 +1,878 @@
+@startuml Watchify Backend - Complete Class Diagram
+!theme cerulean-outline
+skinparam linetype ortho
+skinparam groupInheritance 2
+skinparam nodesep 80
+skinparam ranksep 100
+
+' ==================== SHARED KERNEL ====================
+package "Shared Kernel" <<Frame>> #LightGray {
+    abstract class BaseEntity {
+        # UUID id
+        # LocalDateTime createdAt
+        # LocalDateTime updatedAt
+        --
+        + getId(): UUID
+        + setCreatedAt(LocalDateTime)
+        + setUpdatedAt(LocalDateTime)
+    }
+
+    interface DomainEvent {
+        + occurredOn(): LocalDateTime
+        + eventType(): String
+    }
+
+    class PageResponse<T> {
+        - List<T> content
+        - Integer currentPage
+        - Integer totalPages
+        - Long totalElements
+        - Integer pageSize
+        - Boolean hasNext
+        - Boolean hasPrevious
+    }
+}
+
+' ==================== IDENTITY MODULE ====================
+package "Identity Module" <<Frame>> #LightBlue {
+    
+    ' Domain Entities
+    class User extends BaseEntity {
+        - String email
+        - String password
+        - String firstName
+        - String lastName
+        - String phone
+        - UserStatus status
+        - Boolean locked
+        - Set<Role> roles
+        --
+        + register(email, password, name)
+        + login(password): boolean
+        + isActive(): boolean
+        + hasRole(role): boolean
+        + lock(): void
+        + unlock(): void
+    }
+
+    enum UserStatus {
+        ACTIVE
+        INACTIVE
+        SUSPENDED
+    }
+
+    class Role extends BaseEntity {
+        - String tenQuyen
+        - String moTa
+    }
+
+    class RefreshToken extends BaseEntity {
+        - String token
+        - UUID userId
+        - LocalDateTime expiryDate
+        - Boolean revoked
+        --
+        + isExpired(): boolean
+        + revoke(): void
+    }
+
+    class Address extends BaseEntity {
+        - UUID userId
+        - String recipientName
+        - String phone
+        - String addressLine
+        - String ward
+        - String district
+        - String city
+        - String country
+        - String postalCode
+        - Boolean isDefault
+        - AddressType type
+        --
+        + setAsDefault(): void
+        + getFullAddress(): String
+    }
+
+    enum AddressType {
+        SHIPPING
+        BILLING
+    }
+
+    ' DTOs
+    class UserDto {
+        + UUID id
+        + String email
+        + String firstName
+        + String lastName
+        + String fullName
+        + String phone
+        + String status
+        + Set<String> roles
+    }
+
+    class LoginRequest {
+        + String email
+        + String password
+    }
+
+    class LoginResponse {
+        + String token
+        + String refreshToken
+        + String type
+        + UserDto user
+    }
+
+    class RegisterRequest {
+        + String email
+        + String password
+        + String firstName
+        + String lastName
+    }
+
+    ' Services
+    class AuthService {
+        - UserRepository userRepository
+        - PasswordEncoder passwordEncoder
+        - JwtTokenProvider jwtTokenProvider
+        - RefreshTokenService refreshTokenService
+        --
+        + register(RegisterRequest): UserDto
+        + login(LoginRequest): LoginResponse
+        + refreshAccessToken(String): String
+        + getCurrentUser(): UserDto
+        + revokeRefreshToken(String): void
+    }
+
+    class UserService {
+        - UserRepository userRepository
+        --
+        + getUserById(UUID): UserDto
+        + updateUser(UUID, UpdateUserRequest): UserDto
+        + changePassword(UUID, ChangePasswordRequest): void
+        + lockUser(UUID): void
+        + unlockUser(UUID): void
+    }
+
+    ' Repositories
+    interface UserRepository {
+        + findByEmail(String): Optional<User>
+        + existsByEmail(String): boolean
+        + findByStatus(UserStatus): List<User>
+    }
+
+    interface RefreshTokenRepository {
+        + findByToken(String): Optional<RefreshToken>
+        + deleteByUserId(UUID): void
+    }
+
+    ' Security
+    class JwtTokenProvider {
+        - String secretKey
+        - Long accessTokenExpiration
+        - Long refreshTokenExpiration
+        --
+        + generateAccessToken(User): String
+        + generateRefreshToken(User): String
+        + validateToken(String): boolean
+        + getUserIdFromToken(String): UUID
+    }
+
+    ' Relationships
+    User "1" *-- "many" Role
+    User "1" *-- "many" Address
+    User "1" -- "many" RefreshToken
+    AuthService ..> UserRepository
+    AuthService ..> JwtTokenProvider
+    UserService ..> UserRepository
+}
+
+' ==================== CATALOG MODULE ====================
+package "Catalog Module" <<Frame>> #LightGreen {
+    
+    ' Domain Entities
+    class Product extends BaseEntity {
+        - String name
+        - String slug
+        - String sku
+        - String description
+        - String shortDescription
+        - BigDecimal price
+        - BigDecimal originalPrice
+        - ProductStatus status
+        - UUID categoryId
+        - UUID brandId
+        - Integer viewCount
+        - Boolean isFeatured
+        - Boolean isNew
+        - Integer displayOrder
+        --
+        + calculateDiscountPercentage(): BigDecimal
+        + isOnSale(): boolean
+        + isAvailable(): boolean
+        + incrementViewCount(): void
+        + activate(): void
+        + deactivate(): void
+    }
+
+    enum ProductStatus {
+        ACTIVE
+        INACTIVE
+        OUT_OF_STOCK
+        DISCONTINUED
+    }
+
+    class ProductDetail extends BaseEntity {
+        - UUID productId
+        - String movement
+        - String caseMaterial
+        - String caseDiameter
+        - String caseThickness
+        - String dialColor
+        - String strapMaterial
+        - String strapColor
+        - String waterResistance
+        - String crystal
+        - String weight
+        - String powerReserve
+        - String warranty
+        - String origin
+        - String gender
+        - String additionalFeatures
+    }
+
+    class ProductImage extends BaseEntity {
+        - UUID productId
+        - String imageUrl
+        - String altText
+        - Integer displayOrder
+        - Boolean isMain
+        --
+        + setAsMain(): void
+    }
+
+    class Category extends BaseEntity {
+        - String name
+        - String slug
+        - String description
+        - UUID parentId
+        - Integer displayOrder
+        - Boolean isActive
+        --
+        + activate(): void
+        + deactivate(): void
+    }
+
+    class Brand extends BaseEntity {
+        - String name
+        - String slug
+        - String description
+        - String logoUrl
+        - String websiteUrl
+        - Boolean isActive
+        - Integer displayOrder
+        --
+        + activate(): void
+        + deactivate(): void
+    }
+
+    class Review extends BaseEntity {
+        - UUID productId
+        - UUID userId
+        - Integer rating
+        - String title
+        - String content
+        - ReviewStatus status
+        - Integer helpfulCount
+        --
+        + approve(): void
+        + reject(): void
+        + markAsHelpful(): void
+    }
+
+    enum ReviewStatus {
+        PENDING
+        APPROVED
+        REJECTED
+    }
+
+    class Wishlist extends BaseEntity {
+        - UUID userId
+        - UUID productId
+        - Boolean notifyOnSale
+        - Boolean notifyOnStock
+        - LocalDateTime addedAt
+    }
+
+    class Cart extends BaseEntity {
+        - UUID userId
+        - LocalDateTime lastActivityAt
+        --
+        + addItem(productId, quantity): void
+        + updateItem(productId, quantity): void
+        + removeItem(productId): void
+        + clear(): void
+        + getTotalPrice(): BigDecimal
+        + getTotalItems(): Integer
+    }
+
+    class CartItem extends BaseEntity {
+        - UUID cartId
+        - UUID productId
+        - Integer quantity
+        - BigDecimal price
+        --
+        + getSubtotal(): BigDecimal
+        + updateQuantity(Integer): void
+    }
+
+    ' DTOs
+    class ProductDto {
+        + UUID id
+        + String name
+        + String slug
+        + BigDecimal price
+        + ProductStatus status
+        + CategoryDto category
+        + BrandDto brand
+        + List<ProductImageDto> images
+        + ProductDetailDto detail
+        + Double averageRating
+        + Long reviewCount
+    }
+
+    class ProductListResponse {
+        + List<ProductDto> products
+        + Integer currentPage
+        + Integer totalPages
+        + Long totalElements
+        + Integer pageSize
+        + Boolean hasNext
+        + Boolean hasPrevious
+    }
+
+    class CartDto {
+        + UUID id
+        + UUID userId
+        + List<CartItemDto> items
+        + BigDecimal totalPrice
+        + Integer totalItems
+    }
+
+    class CartItemDto {
+        + UUID id
+        + UUID productId
+        + String productName
+        + String productImage
+        + BigDecimal price
+        + Integer quantity
+        + BigDecimal subtotal
+    }
+
+    ' Services
+    class ProductService {
+        - ProductRepository productRepository
+        - CategoryRepository categoryRepository
+        - BrandRepository brandRepository
+        --
+        + getProducts(filter, page, size): ProductListResponse
+        + getProductById(UUID): ProductDto
+        + getProductBySlug(String): ProductDto
+        + createProduct(CreateProductRequest): ProductDto
+        + updateProduct(UUID, UpdateProductRequest): ProductDto
+        + deleteProduct(UUID): void
+        + incrementViewCount(UUID): void
+    }
+
+    class CartService {
+        - CartRepository cartRepository
+        - ProductRepository productRepository
+        --
+        + getCurrentCart(UUID): CartDto
+        + addItemToCart(userId, productId, quantity): CartDto
+        + updateCartItem(userId, productId, quantity): CartDto
+        + deleteCartItem(userId, productId): CartDto
+        + clearCart(UUID): void
+    }
+
+    class ReviewService {
+        - ReviewRepository reviewRepository
+        - OrderRepository orderRepository
+        --
+        + createReview(productId, userId, rating, title, content): ReviewDto
+        + getProductReviews(UUID): List<ReviewDto>
+        + approveReview(UUID): void
+        + rejectReview(UUID): void
+        + markAsHelpful(UUID): void
+    }
+
+    class WishlistService {
+        - WishlistRepository wishlistRepository
+        --
+        + getUserWishlist(UUID): List<WishlistDto>
+        + addToWishlist(userId, productId): WishlistDto
+        + removeFromWishlist(userId, productId): void
+    }
+
+    ' Repositories
+    interface ProductRepository {
+        + findBySlug(String): Optional<Product>
+        + findBySku(String): Optional<Product>
+        + findByStatus(ProductStatus): List<Product>
+        + findByCategory(UUID): List<Product>
+        + findByBrand(UUID): List<Product>
+        + findFeatured(int): List<Product>
+    }
+
+    interface CartRepository {
+        + findByUserId(UUID): Optional<Cart>
+    }
+
+    interface ReviewRepository {
+        + findByProductId(UUID): List<Review>
+        + findByStatus(ReviewStatus): List<Review>
+        + calculateAverageRating(UUID): Double
+    }
+
+    ' Relationships
+    Product "1" *-- "1" ProductDetail
+    Product "1" *-- "many" ProductImage
+    Product "many" -- "1" Category
+    Product "many" -- "1" Brand
+    Product "1" -- "many" Review
+    Product "1" -- "many" Wishlist
+    Cart "1" *-- "many" CartItem
+    CartItem "many" -- "1" Product
+}
+
+' ==================== ORDER MODULE ====================
+package "Order Module" <<Frame>> #LightYellow {
+    
+    ' Domain Entities
+    class Order extends BaseEntity {
+        - String orderNumber
+        - UUID userId
+        - BigDecimal totalAmount
+        - OrderStatus status
+        - PaymentMethod paymentMethod
+        - String shippingAddress
+        - String billingAddress
+        - String notes
+        - LocalDateTime orderDate
+        --
+        + confirm(): void
+        + process(): void
+        + ship(): void
+        + deliver(): void
+        + cancel(): void
+        + canBeCancelled(): boolean
+        + getTotalItems(): Integer
+    }
+
+    enum OrderStatus {
+        PENDING
+        CONFIRMED
+        PROCESSING
+        SHIPPED
+        DELIVERED
+        CANCELLED
+        REFUNDED
+    }
+
+    enum PaymentMethod {
+        COD
+        EWALLET
+        BANK_TRANSFER
+        CREDIT_CARD
+    }
+
+    class OrderItem extends BaseEntity {
+        - UUID orderId
+        - UUID productId
+        - String productName
+        - Integer quantity
+        - BigDecimal unitPrice
+        - BigDecimal totalPrice
+        --
+        + calculateTotal(): BigDecimal
+    }
+
+    class GuestOrder extends Order {
+        - String guestEmail
+        - String guestName
+        - String guestPhone
+    }
+
+    ' DTOs
+    class OrderDto {
+        + UUID id
+        + String orderNumber
+        + UUID userId
+        + UserDto user
+        + BigDecimal totalAmount
+        + BigDecimal total
+        + OrderStatus status
+        + PaymentMethod paymentMethod
+        + String shippingAddress
+        + String billingAddress
+        + String notes
+        + LocalDateTime orderDate
+        + List<OrderItemDto> items
+    }
+
+    class OrderItemDto {
+        + UUID id
+        + UUID productId
+        + String productName
+        + Integer quantity
+        + BigDecimal unitPrice
+        + BigDecimal totalPrice
+    }
+
+    class CreateOrderRequest {
+        + PaymentMethod paymentMethod
+        + String shippingAddress
+        + String billingAddress
+        + String notes
+        + List<OrderItemRequest> items
+    }
+
+    class OrderListResponse {
+        + List<OrderDto> orders
+        + Integer currentPage
+        + Integer totalPages
+        + Long totalElements
+        + Boolean hasNext
+        + Boolean hasPrevious
+    }
+
+    ' Services
+    class OrderService {
+        - OrderRepository orderRepository
+        - ProductRepository productRepository
+        - InventoryService inventoryService
+        - EventPublisher eventPublisher
+        --
+        + createDirect(CreateOrderRequest, userId): OrderDto
+        + createGuestOrder(CreateGuestOrderRequest): OrderDto
+        + getUserOrders(userId, page, size): OrderListResponse
+        + getOrderById(orderId, userId): OrderDto
+        + updateOrderStatus(orderId, status): OrderDto
+        + cancelOrder(orderId, userId): OrderDto
+    }
+
+    ' Repositories
+    interface OrderRepository {
+        + findByUserId(UUID): List<Order>
+        + findByOrderNumber(String): Optional<Order>
+        + findByStatus(OrderStatus): List<Order>
+    }
+
+    ' Domain Events
+    class OrderCreatedEvent implements DomainEvent {
+        - UUID orderId
+        - UUID userId
+        - List<OrderItem> items
+        - LocalDateTime occurredOn
+    }
+
+    class OrderConfirmedEvent implements DomainEvent {
+        - UUID orderId
+        - LocalDateTime occurredOn
+    }
+
+    class OrderCancelledEvent implements DomainEvent {
+        - UUID orderId
+        - List<OrderItem> items
+        - LocalDateTime occurredOn
+    }
+
+    ' Relationships
+    Order "1" *-- "many" OrderItem
+    Order ..> OrderCreatedEvent : publishes
+    Order ..> OrderConfirmedEvent : publishes
+    Order ..> OrderCancelledEvent : publishes
+}
+
+' ==================== INVENTORY MODULE ====================
+package "Inventory Module" <<Frame>> #LightCoral {
+    
+    ' Domain Entities
+    class Inventory extends BaseEntity {
+        - UUID productId
+        - Integer quantity
+        - Integer reservedQuantity
+        - Integer minimumStockLevel
+        - String warehouseLocation
+        --
+        + getAvailableQuantity(): Integer
+        + reserve(Integer): void
+        + releaseReservation(Integer): void
+        + addStock(Integer): void
+        + removeStock(Integer): void
+        + isInStock(): boolean
+        + needsRestock(): boolean
+    }
+
+    class StockMovement extends BaseEntity {
+        - UUID inventoryId
+        - MovementType type
+        - Integer quantity
+        - String reference
+        - String notes
+        - UUID performedBy
+    }
+
+    enum MovementType {
+        IN
+        OUT
+        RESERVED
+        RELEASED
+        ADJUSTMENT
+    }
+
+    ' DTOs
+    class InventoryDto {
+        + UUID id
+        + UUID productId
+        + Integer quantity
+        + Integer reservedQuantity
+        + Integer availableQuantity
+        + Integer minimumStockLevel
+        + Boolean inStock
+    }
+
+    ' Services
+    class InventoryService {
+        - InventoryRepository inventoryRepository
+        - StockMovementRepository stockMovementRepository
+        --
+        + checkAvailability(productId, quantity): boolean
+        + reserveStock(productId, quantity): void
+        + releaseReservation(productId, quantity): void
+        + updateStock(productId, quantity): void
+        + getInventoryByProduct(UUID): InventoryDto
+    }
+
+    ' Repositories
+    interface InventoryRepository {
+        + findByProductId(UUID): Optional<Inventory>
+        + findLowStock(): List<Inventory>
+    }
+
+    interface StockMovementRepository {
+        + findByInventoryId(UUID): List<StockMovement>
+    }
+
+    ' Event Handlers
+    class OrderEventHandler {
+        - InventoryService inventoryService
+        --
+        + handleOrderCreated(OrderCreatedEvent): void
+        + handleOrderCancelled(OrderCancelledEvent): void
+    }
+
+    ' Relationships
+    Inventory "1" -- "many" StockMovement
+    OrderEventHandler ..> OrderCreatedEvent : subscribes
+    OrderEventHandler ..> OrderCancelledEvent : subscribes
+}
+
+' ==================== PAYMENT MODULE ====================
+package "Payment Module" <<Frame>> #Lavender {
+    
+    ' Domain Entities
+    class Payment extends BaseEntity {
+        - UUID orderId
+        - BigDecimal amount
+        - PaymentStatus status
+        - PaymentGateway gateway
+        - String transactionId
+        - String paymentUrl
+        - LocalDateTime paidAt
+        --
+        + markAsPaid(): void
+        + markAsFailed(): void
+        + isPaid(): boolean
+    }
+
+    enum PaymentStatus {
+        PENDING
+        PROCESSING
+        COMPLETED
+        FAILED
+        REFUNDED
+    }
+
+    enum PaymentGateway {
+        MOMO
+        VNPAY
+        ZALOPAY
+    }
+
+    ' DTOs
+    class PaymentDto {
+        + UUID id
+        + UUID orderId
+        + BigDecimal amount
+        + PaymentStatus status
+        + PaymentGateway gateway
+        + String transactionId
+        + String paymentUrl
+    }
+
+    ' Services
+    class PaymentService {
+        - PaymentRepository paymentRepository
+        - MoMoGateway moMoGateway
+        --
+        + createPayment(orderId, amount, gateway): PaymentDto
+        + processPayment(UUID): String
+        + handleCallback(request): void
+        + getPaymentByOrder(UUID): PaymentDto
+    }
+
+    class MoMoGateway {
+        - String partnerCode
+        - String accessKey
+        - String secretKey
+        --
+        + createPaymentUrl(orderId, amount): String
+        + verifySignature(request): boolean
+    }
+
+    ' Repositories
+    interface PaymentRepository {
+        + findByOrderId(UUID): Optional<Payment>
+        + findByTransactionId(String): Optional<Payment>
+    }
+
+    ' Relationships
+    Payment "1" -- "1" Order
+}
+
+' ==================== PROMOTION MODULE ====================
+package "Promotion Module" <<Frame>> #LightSalmon {
+    
+    ' Domain Entities
+    class Coupon extends BaseEntity {
+        - String code
+        - String description
+        - DiscountType discountType
+        - BigDecimal discountValue
+        - BigDecimal minOrderAmount
+        - BigDecimal maxDiscountAmount
+        - Integer usageLimit
+        - Integer usageCount
+        - Integer perUserLimit
+        - LocalDateTime validFrom
+        - LocalDateTime validTo
+        - Boolean isActive
+        --
+        + isValid(): boolean
+        + isExpired(): boolean
+        + canBeUsed(): boolean
+        + canBeUsedByUser(userId): boolean
+        + calculateDiscount(orderAmount): BigDecimal
+        + incrementUsage(): void
+    }
+
+    enum DiscountType {
+        PERCENTAGE
+        FIXED_AMOUNT
+    }
+
+    class CouponUsage extends BaseEntity {
+        - UUID couponId
+        - UUID userId
+        - UUID orderId
+        - BigDecimal discountAmount
+        - LocalDateTime usedAt
+    }
+
+    ' DTOs
+    class CouponDto {
+        + UUID id
+        + String code
+        + String description
+        + DiscountType discountType
+        + BigDecimal discountValue
+        + BigDecimal minOrderAmount
+        + Boolean isActive
+        + LocalDateTime validTo
+        + Integer remainingUsage
+    }
+
+    class ValidateCouponRequest {
+        + String code
+        + BigDecimal orderAmount
+        + String userId
+    }
+
+    class ValidateCouponResponse {
+        + Boolean valid
+        + String message
+        + UUID couponId
+        + String code
+        + BigDecimal discountAmount
+        + BigDecimal finalAmount
+    }
+
+    ' Services
+    class CouponService {
+        - CouponRepository couponRepository
+        - CouponUsageRepository usageRepository
+        --
+        + validateCoupon(ValidateCouponRequest): ValidateCouponResponse
+        + getCurrentlyValidCoupons(): List<CouponDto>
+        + applyCoupon(userId, code, orderId): CouponUsage
+        + createCoupon(CreateCouponRequest): CouponDto
+        + updateCoupon(id, UpdateCouponRequest): CouponDto
+    }
+
+    ' Repositories
+    interface CouponRepository {
+        + findByCode(String): Optional<Coupon>
+        + findActiveCoupons(): List<Coupon>
+        + findValidCoupons(LocalDateTime): List<Coupon>
+    }
+
+    interface CouponUsageRepository {
+        + countByUserIdAndCouponId(UUID, UUID): Integer
+        + findByUserId(UUID): List<CouponUsage>
+    }
+
+    ' Relationships
+    Coupon "1" -- "many" CouponUsage
+}
+
+' ==================== CROSS-MODULE RELATIONSHIPS ====================
+User "1" -- "many" Order
+User "1" -- "many" Cart
+User "1" -- "many" Review
+User "1" -- "many" Wishlist
+Product "1" -- "many" OrderItem
+Product "1" -- "1" Inventory
+Order "1" -- "1" Payment
+Order "1" -- "0..1" CouponUsage
+
+note right of BaseEntity
+  All entities extend BaseEntity
+  which provides:
+  - UUID primary key
+  - Created/Updated timestamps
+  - Audit fields
+end note
+
+note right of DomainEvent
+  Events enable loose coupling
+  between modules through
+  event-driven architecture
+end note
+
+note bottom of OrderEventHandler
+  Subscribes to order events
+  and updates inventory
+  automatically
+end note
+
+@enduml

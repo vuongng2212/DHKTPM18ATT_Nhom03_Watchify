@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chào mừng đến với Watchify</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .header .logo {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #1890ff;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 15px;
+            color: #555555;
+            margin-bottom: 15px;
+        }
+        .features {
+            background-color: #f8f9fa;
+            border-left: 4px solid #1890ff;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .features h3 {
+            margin-top: 0;
+            color: #1890ff;
+            font-size: 16px;
+        }
+        .features ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .features li {
+            margin: 8px 0;
+            color: #555555;
+            font-size: 14px;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #1890ff;
+            color: white !important;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 25px 0;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #096dd9;
+        }
+        .cta-container {
+            text-align: center;
+        }
+        .social-links {
+            text-align: center;
+            padding: 20px;
+            background-color: #f8f9fa;
+            margin-top: 20px;
+        }
+        .social-links a {
+            display: inline-block;
+            margin: 0 10px;
+            color: #1890ff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .footer {
+            background-color: #2c3e50;
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+            font-size: 13px;
+        }
+        .footer p {
+            margin: 8px 0;
+            color: #bdc3c7;
+        }
+        .footer a {
+            color: #1890ff;
+            text-decoration: none;
+        }
+        .divider {
+            height: 1px;
+            background-color: #e8e8e8;
+            margin: 25px 0;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .cta-button {
+                display: block;
+                padding: 12px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">⌚ WATCHIFY</div>
+            <h1>Chào mừng đến với Watchify!</h1>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <p class="greeting">Xin chào <span th:text="${fullName}">Quý khách</span>! 👋</p>
+
+            <p class="message">
+                Chúng tôi rất vui mừng chào đón bạn đến với <strong>Watchify</strong> - 
+                hệ thống thương mại điện tử chuyên về đồng hồ cao cấp hàng đầu Việt Nam.
+            </p>
+
+            <p class="message">
+                Tài khoản của bạn đã được tạo thành công! Bạn có thể bắt đầu khám phá 
+                bộ sưu tập đồng hồ sang trọng và đặt hàng ngay hôm nay.
+            </p>
+
+            <div class="divider"></div>
+
+            <!-- Features -->
+            <div class="features">
+                <h3>🎁 Quyền lợi của bạn:</h3>
+                <ul>
+                    <li>✨ Truy cập đầy đủ bộ sưu tập đồng hồ cao cấp từ các thương hiệu nổi tiếng</li>
+                    <li>🎯 Nhận thông báo về các chương trình khuyến mãi đặc biệt</li>
+                    <li>💝 Tích điểm và nhận ưu đãi độc quyền cho khách hàng thân thiết</li>
+                    <li>📦 Theo dõi đơn hàng dễ dàng và nhận thông báo cập nhật</li>
+                    <li>⭐ Đánh giá sản phẩm và chia sẻ trải nghiệm của bạn</li>
+                    <li>🤖 Tư vấn mua sắm miễn phí từ AI Assistant</li>
+                </ul>
+            </div>
+
+            <!-- CTA Button -->
+            <div class="cta-container">
+                <a th:href="${loginUrl}" class="cta-button">
+                    🚀 Bắt đầu mua sắm ngay
+                </a>
+            </div>
+
+            <div class="divider"></div>
+
+            <p class="message">
+                Nếu bạn có bất kỳ câu hỏi nào, đừng ngần ngại liên hệ với chúng tôi qua email 
+                <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}" 
+                   style="color: #1890ff; text-decoration: none;">support@watchify.com</a>
+            </p>
+
+            <p class="message">
+                Chúng tôi luôn sẵn sàng hỗ trợ bạn!
+            </p>
+
+            <p class="message" style="margin-top: 30px;">
+                <strong>Trân trọng,</strong><br>
+                <span style="color: #1890ff; font-weight: 600;">Đội ngũ Watchify</span>
+            </p>
+        </div>
+
+        <!-- Social Links -->
+        <div class="social-links">
+            <p style="margin-bottom: 15px; color: #555;">Theo dõi chúng tôi:</p>
+            <a href="#">Facebook</a> | 
+            <a href="#">Instagram</a> | 
+            <a href="#">Twitter</a> | 
+            <a href="#">YouTube</a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>WATCHIFY E-COMMERCE</strong></p>
+            <p>Địa chỉ: 123 Đường ABC, Quận 1, TP.HCM</p>
+            <p>Hotline: 1900-xxxx | Email: <span th:text="${supportEmail}">support@watchify.com</span></p>
+            <p style="margin-top: 15px;">
+                <a th:href="${frontendUrl}">Trang chủ</a> | 
+                <a href="#">Chính sách</a> | 
+                <a href="#">Điều khoản</a>
+            </p>
+            <p style="margin-top: 15px; font-size: 12px;">
+                © <span th:text="${currentYear}">2024</span> Watchify. All rights reserved.
+            </p>
+            <p style="font-size: 11px; color: #95a5a6; margin-top: 10px;">
+                Email này được gửi tự động, vui lòng không trả lời.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

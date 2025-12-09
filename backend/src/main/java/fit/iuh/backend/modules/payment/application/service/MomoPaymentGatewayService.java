@@ -51,6 +51,11 @@ public class MomoPaymentGatewayService implements PaymentGatewayService {
         try {
             String orderInfo = "Thanh toan don hang " + payment.getOrder().getId();
 
+            log.info("=== CREATING MOMO PAYMENT URL ===");
+            log.info("Payment ID: {}", payment.getId());
+            log.info("Order ID: {}", payment.getOrder().getId());
+            log.info("Amount: {}", payment.getAmount());
+
             // Create request
             MomoPaymentRequest momoRequest = MomoPaymentRequest.builder()
                     .partnerCode(partnerCode)
@@ -69,25 +74,43 @@ public class MomoPaymentGatewayService implements PaymentGatewayService {
 
             // Build raw data for signature
             String rawData = buildRawData(momoRequest);
+            log.info("Raw data for signature: {}", rawData);
+            
             String signature = generateSignature(rawData, secretKey);
+            log.info("Generated signature: {}", signature);
 
             momoRequest.setSignature(signature);
+
+            log.info("MoMo Request: {}", momoRequest);
+            log.info("API Endpoint: {}", apiEndpoint);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<MomoPaymentRequest> requestEntity = new HttpEntity<>(momoRequest, headers);
 
+            log.info("Sending request to MoMo...");
             MomoPaymentResponse momoResponse = restTemplate.postForObject(apiEndpoint, requestEntity, MomoPaymentResponse.class);
 
+            log.info("MoMo Response: {}", momoResponse);
+            log.info("Result Code: {}", momoResponse != null ? momoResponse.getResultCode() : "null");
+            log.info("Message: {}", momoResponse != null ? momoResponse.getMessage() : "null");
+
             if (momoResponse != null && "0".equals(momoResponse.getResultCode())) {
+                log.info("✅ MoMo payment URL created successfully: {}", momoResponse.getPayUrl());
                 return momoResponse.getPayUrl();
             } else {
-                log.error("Failed to create Momo payment URL. Response: {}", momoResponse);
+                log.error("❌ Failed to create Momo payment URL. Response: {}", momoResponse);
+                if (momoResponse != null) {
+                    log.error("Error Code: {}", momoResponse.getResultCode());
+                    log.error("Error Message: {}", momoResponse.getMessage());
+                }
                 throw new RuntimeException("Failed to create Momo payment URL");
             }
 
         } catch (Exception e) {
-            log.error("Error creating Momo payment URL", e);
+            log.error("❌ Error creating Momo payment URL", e);
+            log.error("Exception type: {}", e.getClass().getName());
+            log.error("Exception message: {}", e.getMessage());
             throw new RuntimeException("Error creating Momo payment URL: " + e.getMessage());
         }
     }
@@ -159,7 +182,10 @@ public class MomoPaymentGatewayService implements PaymentGatewayService {
         data.append("&redirectUrl=").append(request.getRedirectUrl());
         data.append("&requestId=").append(request.getRequestId());
         data.append("&requestType=").append(request.getRequestType());
-        return data.toString();
+        
+        String result = data.toString();
+        log.debug("Built raw data: {}", result);
+        return result;
     }
 
     private String generateSignature(String data, String secretKey) {

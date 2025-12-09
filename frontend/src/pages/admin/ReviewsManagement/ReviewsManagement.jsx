@@ -43,7 +43,25 @@ const ReviewsManagement = () => {
     setLoading(true);
     try {
       const response = await getAllReviewsApi();
-      setReviews(response.data || []);
+      console.log("📊 Reviews fetched:", response);
+      
+      // Parse createdAt from array format [year, month, day, hour, min, sec, nano]
+      const parsedReviews = (response || []).map(review => ({
+        ...review,
+        createdAt: Array.isArray(review.createdAt) 
+          ? new Date(
+              review.createdAt[0], // year
+              review.createdAt[1] - 1, // month (0-indexed)
+              review.createdAt[2], // day
+              review.createdAt[3] || 0, // hour
+              review.createdAt[4] || 0, // minute
+              review.createdAt[5] || 0, // second
+            )
+          : new Date(review.createdAt)
+      }));
+      
+      console.log("✅ Parsed reviews:", parsedReviews);
+      setReviews(parsedReviews);
     } catch (error) {
       console.error("Error fetching reviews:", error);
       message.error("Không thể tải danh sách đánh giá");

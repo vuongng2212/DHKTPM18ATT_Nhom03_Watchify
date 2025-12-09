@@ -1,0 +1,245 @@
+@startuml Inventory Module - Class Diagram
+
+!define ENTITY_COLOR #FFF8E1
+!define ENUM_COLOR #FFF9C4
+!define CATALOG_COLOR #E3F2FD
+
+skinparam class {
+    BackgroundColor ENTITY_COLOR
+    BorderColor #F57F17
+    ArrowColor #F57F17
+    FontSize 11
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+
+title Inventory Module - Watchify E-commerce System
+
+package "Inventory Module" ENTITY_COLOR {
+    
+    class Inventory <<Entity>> {
+        - UUID id
+        - UUID productId {unique}
+        - Integer quantity
+        - Integer reservedQuantity
+        - String location
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        __
+        + getAvailableQuantity(): Integer
+        + isInStock(): boolean
+        + canReserve(Integer quantity): boolean
+        + reserve(Integer quantity): void
+        + release(Integer quantity): void
+        + confirmReservation(Integer quantity): void
+        + addQuantity(Integer quantity): void
+        + reduceQuantity(Integer quantity): void
+    }
+    
+    class InventoryTransaction <<Entity>> {
+        - UUID id
+        - UUID inventoryId
+        - TransactionType type
+        - Integer quantity
+        - Integer quantityBefore
+        - Integer quantityAfter
+        - String reference
+        - String notes
+        - String performedBy
+        - LocalDateTime createdAt
+        __
+        + isAddition(): boolean
+        + isDeduction(): boolean
+    }
+    
+    enum TransactionType <<Enumeration>> ENUM_COLOR {
+        INITIAL_STOCK
+        PURCHASE
+        SALE
+        RETURN
+        ADJUSTMENT
+        DAMAGED
+        RESERVED
+        RELEASED
+        CONFIRMED
+        __
+        + getDescription(): String
+        + isIncrement(): boolean
+        + isDecrement(): boolean
+    }
+}
+
+package "Catalog Module (Reference)" CATALOG_COLOR {
+    
+    class Product <<Entity>> {
+        - UUID id
+        - String name
+        - String sku
+        - BigDecimal price
+        - ProductStatus status
+        __
+        + isAvailable(): boolean
+    }
+    
+    enum ProductStatus <<Enumeration>> ENUM_COLOR {
+        ACTIVE
+        OUT_OF_STOCK
+        DISCONTINUED
+    }
+}
+
+' Relationships
+Inventory "1" -- "1" Product : tracks\n{productId}
+Inventory "1" -- "0..*" InventoryTransaction : has history
+InventoryTransaction --> TransactionType : has
+
+Product --> ProductStatus : uses
+
+' Notes
+note right of Inventory
+    **Core Inventory Entity**
+    - One-to-one relationship with Product
+    - quantity: Total physical stock
+    - reservedQuantity: Stock allocated to pending orders
+    - Available = quantity - reservedQuantity
+    
+    **Concurrency Control:**
+    - Uses optimistic locking (@Version)
+    - Or database row-level locks
+    - Prevents overselling
+end note
+
+note right of InventoryTransaction
+    **Audit Trail**
+    - Records every inventory change
+    - Maintains complete history
+    - Tracks who made changes
+    - Links to reference documents
+      (order ID, purchase order, etc.)
+    
+    **Use Cases:**
+    - Stock reconciliation
+    - Audit compliance
+    - Analytics and reporting
+end note
+
+note bottom of TransactionType
+    **Transaction Types:**
+    
+    **Increment Operations:**
+    - INITIAL_STOCK: First stock entry
+    - PURCHASE: Stock received from supplier
+    - RETURN: Customer returned items
+    - RELEASED: Reserved stock released
+    
+    **Decrement Operations:**
+    - SALE: Confirmed sale
+    - DAMAGED: Damaged/defective items
+    - ADJUSTMENT: Manual adjustment
+    - RESERVED: Stock reserved for order
+    
+    **Neutral:**
+    - CONFIRMED: Reserved → Confirmed (affects both)
+end note
+
+' Business Rules Note
+note as BusinessRules
+    **Critical Business Rules:**
+    
+    1. **Reserve Stock (Order Creation):**
+       - Check: availableQuantity >= requested
+       - If yes: reservedQuantity += requested
+       - If no: Throw OutOfStockException
+       - Log: RESERVED transaction
+    
+    2. **Release Stock (Order Cancel):**
+       - reservedQuantity -= amount
+       - Log: RELEASED transaction
+    
+    3. **Confirm Sale (Payment Success):**
+       - quantity -= amount
+       - reservedQuantity -= amount
+       - Log: CONFIRMED transaction
+    
+    4. **Add Stock (Receiving):**
+       - quantity += amount
+       - Log: PURCHASE transaction
+    
+    5. **Reduce Stock (Damage/Loss):**
+       - quantity -= amount
+       - Log: DAMAGED transaction
+    
+    6. **Product Status Sync:**
+       - If availableQuantity <= 0:
+         Set Product.status = OUT_OF_STOCK
+       - If availableQuantity > 0:
+         Set Product.status = ACTIVE
+end note
+
+BusinessRules .. Inventory
+
+' Workflow Example
+note as WorkflowExample
+    **Example Workflow: Customer Order**
+    
+    Initial State:
+    - quantity = 100
+    - reservedQuantity = 0
+    - available = 100
+    
+    Step 1: Customer creates order (qty=5)
+    → reserve(5)
+    - quantity = 100
+    - reservedQuantity = 5
+    - available = 95
+    - Transaction: RESERVED, qty=5
+    
+    Step 2: Customer pays successfully
+    → confirmReservation(5)
+    - quantity = 95
+    - reservedQuantity = 0
+    - available = 95
+    - Transaction: CONFIRMED, qty=5
+    
+    Alternative: Customer cancels order
+    → release(5)
+    - quantity = 100
+    - reservedQuantity = 0
+    - available = 100
+    - Transaction: RELEASED, qty=5
+end note
+
+WorkflowExample .. InventoryTransaction
+
+' Legend
+legend right
+    **Design Patterns:**
+    - **Aggregate Pattern**: Inventory is aggregate root
+    - **Audit Trail**: InventoryTransaction tracks all changes
+    - **Optimistic Locking**: Prevents concurrent updates
+    - **Domain Events**: Inventory changes trigger events
+    
+    **Implementation Notes:**
+    - productId has unique constraint (one-to-one)
+    - All operations are transactional
+    - quantity and reservedQuantity cannot be negative
+    - location supports multi-warehouse (optional)
+    - InventoryTransaction is append-only (never updated/deleted)
+    
+    **Integration Points:**
+    - Catalog Module: Links to Product via productId
+    - Order Module: Calls reserve/release/confirm
+    - Admin Module: Calls add/reduce for stock management
+    
+    **Future Enhancements:**
+    - Multi-warehouse support (location field)
+    - Batch operations for bulk updates
+    - Low stock alerts/notifications
+    - Automatic reorder points
+    - Stock transfer between warehouses
+endlegend
+
+@enduml

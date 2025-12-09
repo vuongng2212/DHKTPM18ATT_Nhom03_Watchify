@@ -4,6 +4,7 @@ import fit.iuh.backend.modules.catalog.domain.entity.Product;
 import fit.iuh.backend.modules.catalog.domain.repository.ProductRepository;
 import fit.iuh.backend.modules.identity.domain.entity.User;
 import fit.iuh.backend.modules.identity.domain.repository.UserRepository;
+import fit.iuh.backend.modules.notification.application.service.EmailService;
 import fit.iuh.backend.modules.order.application.dto.CreateGuestOrderRequest;
 import fit.iuh.backend.modules.order.application.dto.CreateOrderRequest;
 import fit.iuh.backend.modules.order.application.dto.OrderDto;
@@ -48,6 +49,7 @@ public class OrderService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final EmailService emailService;
 
     @Transactional
     public OrderDto createDirect(CreateOrderRequest request, UUID userId) {
@@ -86,6 +88,22 @@ public class OrderService {
 
         // Publish event
         eventPublisher.publishEvent(new OrderCreatedEvent(order.getId(), userId, totalAmount));
+
+        // Send order confirmation email
+        try {
+            String fullName = user.getFirstName() + " " + user.getLastName();
+            String orderCode = order.getId().toString().substring(0, 8).toUpperCase();
+            emailService.sendOrderConfirmationEmail(
+                user.getEmail(),
+                fullName,
+                orderCode,
+                totalAmount,
+                totalAmount,
+                BigDecimal.ZERO
+            );
+        } catch (Exception e) {
+            log.error("Failed to send order confirmation email for order: {}", order.getId(), e);
+        }
 
         log.info("Order created successfully: {}", order.getId());
         return orderMapper.toDto(order);
@@ -215,11 +233,62 @@ public class OrderService {
 
         // Map Vietnamese status to enum
         OrderStatus newStatus = mapVietnameseStatusToEnum(trangThaiDonHang);
+        OrderStatus oldStatus = order.getStatus();
         order.setStatus(newStatus);
 
         orderRepository.save(order);
 
         log.info("Updated order {} status to {}", orderId, newStatus);
+
+        // Send status update emails if user exists
+        if (order.getUser() != null && oldStatus != newStatus) {
+            try {
+                String fullName = order.getUser().getFirstName() + " " + order.getUser().getLastName();
+                String orderCode = order.getId().toString().substring(0, 8).toUpperCase();
+                String statusText = getStatusText(newStatus);
+
+                // Send specific emails for certain statuses
+                switch (newStatus) {
+                    case SHIPPED -> emailService.sendOrderShippedEmail(
+                        order.getUser().getEmail(),
+                        fullName,
+                        orderCode,
+                        null // trackingNumber
+                    );
+                    case DELIVERED -> emailService.sendOrderDeliveredEmail(
+                        order.getUser().getEmail(),
+                        fullName,
+                        orderCode
+                    );
+                    case CANCELLED -> emailService.sendOrderCancelledEmail(
+                        order.getUser().getEmail(),
+                        fullName,
+                        orderCode,
+                        null // cancelReason
+                    );
+                    default -> emailService.sendOrderStatusUpdateEmail(
+                        order.getUser().getEmail(),
+                        fullName,
+                        orderCode,
+                        newStatus.name(),
+                        statusText
+                    );
+                }
+            } catch (Exception e) {
+                log.error("Failed to send status update email for order: {}", orderId, e);
+            }
+        }
+    }
+
+    private String getStatusText(OrderStatus status) {
+        return switch (status) {
+            case PENDING -> "Chờ xác nhận";
+            case CONFIRMED -> "Đã xác nhận";
+            case PROCESSING -> "Đang xử lý";
+            case SHIPPED -> "Đang giao hàng";
+            case DELIVERED -> "Đã giao hàng";
+            case CANCELLED -> "Đã hủy";
+        };
     }
 
     private OrderStatus mapVietnameseStatusToEnum(String vietnameseStatus) {

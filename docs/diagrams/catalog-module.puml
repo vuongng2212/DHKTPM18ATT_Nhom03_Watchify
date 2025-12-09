@@ -1,0 +1,274 @@
+@startuml Catalog Module - Class Diagram
+
+!define ENTITY_COLOR #E3F2FD
+!define ENUM_COLOR #FFF9C4
+!define VALUE_COLOR #F3E5F5
+
+skinparam class {
+    BackgroundColor ENTITY_COLOR
+    BorderColor #1976D2
+    ArrowColor #0D47A1
+    FontSize 11
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+
+title Catalog Module - Watchify E-commerce System
+
+package "Catalog Module" {
+    
+    class Product <<Entity, Aggregate Root>> {
+        - UUID id
+        - String name
+        - String slug {unique}
+        - String sku {unique}
+        - String description
+        - String shortDescription
+        - BigDecimal price
+        - BigDecimal originalPrice
+        - Integer discountPercentage
+        - ProductStatus status
+        - UUID categoryId
+        - UUID brandId
+        - Long viewCount
+        - Boolean isFeatured
+        - Boolean isNew
+        - Integer displayOrder
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + isAvailable(): boolean
+        + isOnSale(): boolean
+        + getDiscountAmount(): BigDecimal
+        + incrementViewCount(): void
+    }
+    
+    class Category <<Entity>> {
+        - UUID id
+        - String name
+        - String slug {unique}
+        - String description
+        - UUID parentId
+        - Integer displayOrder
+        - Boolean isActive
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + isRootCategory(): boolean
+    }
+    
+    class Brand <<Entity>> {
+        - UUID id
+        - String name
+        - String slug {unique}
+        - String description
+        - String logoUrl
+        - String websiteUrl
+        - Integer displayOrder
+        - Boolean isActive
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + hasLogo(): boolean
+    }
+    
+    class ProductImage <<Entity>> {
+        - UUID id
+        - UUID productId
+        - String imageUrl
+        - String altText
+        - Integer displayOrder
+        - Boolean isPrimary
+        - LocalDateTime createdAt
+        --
+        + getFullUrl(): String
+    }
+    
+    class ProductDetail <<Entity>> {
+        - UUID id
+        - UUID productId
+        - String caseDiameter
+        - String caseThickness
+        - String caseMaterial
+        - String bandMaterial
+        - String movementType
+        - String waterResistance
+        - String features
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + hasCompleteSpecs(): boolean
+    }
+    
+    class Review <<Entity>> {
+        - UUID id
+        - UUID productId
+        - UUID userId
+        - Integer rating
+        - String title
+        - String comment
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + isPositive(): boolean
+        + canEdit(UUID userId): boolean
+    }
+    
+    class Wishlist <<Entity>> {
+        - UUID id
+        - UUID userId
+        - UUID productId
+        - LocalDateTime addedAt
+        --
+        + isRecent(): boolean
+    }
+    
+    class Cart <<Entity>> {
+        - UUID id
+        - UUID userId
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + getTotalAmount(): BigDecimal
+        + getTotalItems(): Integer
+        + isEmpty(): boolean
+    }
+    
+    class CartItem <<Entity>> {
+        - UUID id
+        - UUID cartId
+        - UUID productId
+        - Integer quantity
+        - LocalDateTime addedAt
+        - LocalDateTime updatedAt
+        --
+        + getSubtotal(): BigDecimal
+        + updateQuantity(Integer qty): void
+        + incrementQuantity(): void
+        + decrementQuantity(): void
+    }
+    
+    enum ProductStatus <<Enumeration>> ENUM_COLOR {
+        ACTIVE
+        OUT_OF_STOCK
+        DISCONTINUED
+        --
+        + isAvailable(): boolean
+    }
+}
+
+package "Inventory Module" {
+    class Inventory <<Entity>> {
+        - UUID id
+        - UUID productId {unique}
+        - Integer quantity
+        - Integer reservedQuantity
+        - String location
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + getAvailableQuantity(): Integer
+        + isInStock(): boolean
+        + canReserve(Integer qty): boolean
+        + reserve(Integer qty): void
+        + release(Integer qty): void
+        + confirmReservation(Integer qty): void
+        + addQuantity(Integer qty): void
+        + reduceQuantity(Integer qty): void
+    }
+}
+
+' Relationships - Product
+Product --> ProductStatus : has
+Product "1" o-- "0..*" ProductImage : has images
+Product "1" o-- "0..1" ProductDetail : has details
+Product "1" o-- "0..*" Review : receives
+Product "*" ..> "1" Category : belongs to\n{categoryId}
+Product "*" ..> "1" Brand : belongs to\n{brandId}
+Product "1" -- "1" Inventory : tracked by
+
+' Relationships - Category (Self-referencing)
+Category "0..1" <-- "0..*" Category : parent of\n{parentId}
+
+' Relationships - Cart & Wishlist
+Cart "1" *-- "0..*" CartItem : contains
+CartItem "*" ..> "1" Product : references\n{productId}
+Wishlist "*" ..> "1" Product : saves\n{productId}
+
+' Notes
+note right of Product
+    **Aggregate Root**
+    - Uses UUID foreign keys (categoryId, brandId)
+    - NO JPA navigation properties
+    - Slug for SEO-friendly URLs
+    - SKU for inventory tracking
+    - BigDecimal for precise pricing
+    - viewCount tracks popularity
+    - originalPrice for sale display
+    - displayOrder for manual sorting
+end note
+
+note right of ProductImage
+    **Owned by Product**
+    - Multiple images per product
+    - One marked as primary
+    - displayOrder controls carousel
+    - Stores cloud storage URL
+end note
+
+note right of ProductDetail
+    **One-to-One Relationship**
+    - Watch-specific technical specs
+    - Separated for clean separation
+    - Lazy loading optimization
+    - Optional for simple products
+end note
+
+note right of Inventory
+    **Critical Business Entity**
+    - Separate module for stock management
+    - reservedQuantity for pending orders
+    - Concurrent reservation handling
+    - Prevents overselling
+    - Rich domain logic
+end note
+
+note bottom of Cart
+    **Shopping Cart Pattern**
+    - One cart per user
+    - Temporary before checkout
+    - Cleared after order creation
+    - CartItem is dependent entity
+end note
+
+note bottom of Wishlist
+    **User Favorites**
+    - Simple join table pattern
+    - Tracks when item added
+    - No quantity (not a cart)
+end note
+
+' Legend
+legend right
+    **Relationship Types:**
+    --> Composition/Aggregation (owns)
+    ..> Dependency (uses ID reference)
+    -- Association
+    
+    **Implementation Pattern:**
+    - Foreign keys stored as UUID fields
+    - Unidirectional references only
+    - No bidirectional JPA mappings
+    - Service layer handles joins
+    
+    **Key Design Decisions:**
+    1. Product uses categoryId/brandId (not objects)
+    2. Inventory is separate bounded context
+    3. Cart and Wishlist reference productId
+    4. All images/details owned by Product lifecycle
+endlegend
+
+@enduml

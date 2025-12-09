@@ -19,6 +19,7 @@ public class InventoryDto {
 
     private String id;
     private UUID productId;
+    private String productName;
     private Integer quantity;
     private Integer reservedQuantity;
     private Integer availableQuantity;

@@ -9,6 +9,8 @@ import {
   Title,
   Tooltip,
   Legend,
+  LineController,
+  BarController,
 } from 'chart.js';
 
 // Đăng ký tất cả các thành phần Chart.js một lần duy nhất
@@ -21,7 +23,9 @@ ChartJS.register(
   ArcElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  LineController,
+  BarController
 );
 
 export default ChartJS;

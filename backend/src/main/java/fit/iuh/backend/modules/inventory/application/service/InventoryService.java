@@ -1,6 +1,8 @@
 package fit.iuh.backend.modules.inventory.application.service;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,16 @@ public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final OrderRepository orderRepository;
+
+    /**
+     * Get all inventories
+     */
+    public List<InventoryDto> getAllInventories() {
+        List<Inventory> inventories = inventoryRepository.findAll();
+        return inventories.stream()
+            .map(this::mapToDto)
+            .collect(Collectors.toList());
+    }
 
     /**
      * Get inventory by product ID
@@ -283,7 +295,8 @@ public class InventoryService {
     private InventoryDto mapToDto(Inventory inventory) {
         return InventoryDto.builder()
             .id(inventory.getId())
-            .productId(inventory.getProduct().getId())
+            .productId(inventory.getProduct() != null ? inventory.getProduct().getId() : null)
+            .productName(inventory.getProduct() != null ? inventory.getProduct().getName() : "Unknown")
             .quantity(inventory.getQuantity())
             .reservedQuantity(inventory.getReservedQuantity())
             .availableQuantity(inventory.getAvailableQuantity())

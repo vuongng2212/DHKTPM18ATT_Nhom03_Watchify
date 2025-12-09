@@ -43,30 +43,35 @@ const createInstanceAxios = (baseURL) => {
   };
 
   // Add a request interceptor
-  instance.interceptors.request.use(
-    function (config) {
-      console.log("=== AXIOS REQUEST ===");
-      console.log("🔗 URL:", config.baseURL + config.url);
-      console.log("📍 Method:", config.method?.toUpperCase());
-      console.log("📦 Data:", config.data);
-      console.log("🔍 Params:", config.params);
-      
-      const token = localStorage.getItem("accessToken");
-      console.log("🔑 Access Token:", token ? `${token.substring(0, 20)}...` : "No token");
-      
-      const auth = token ? `Bearer ${token}` : "";
-      config.headers["Authorization"] = auth;
-      console.log("📋 Headers:", config.headers);
-      console.log("=====================");
+instance.interceptors.request.use(
+  function (config) {
+    console.log("=== AXIOS REQUEST ===");
+    console.log("🔗 URL:", config.baseURL + config.url);
+    console.log("📍 Method:", config.method?.toUpperCase());
+    console.log("📦 Data:", config.data);
+    console.log("🔍 Params:", config.params);
 
-      return config;
-    },
-    function (error) {
-      console.error("❌ AXIOS REQUEST ERROR:", error);
-      // Do something with request error
-      return Promise.reject(error);
+    const token = localStorage.getItem("accessToken");
+    console.log(
+      "🔑 Access Token:",
+      token ? `${token.substring(0, 20)}...` : "No token"
+    );
+
+    // ✅ CHỈ set header khi CÓ token
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
     }
-  );
+
+    console.log("📋 Headers:", config.headers);
+    console.log("=====================");
+
+    return config;
+  },
+  function (error) {
+    console.error("❌ AXIOS REQUEST ERROR:", error);
+    return Promise.reject(error);
+  }
+);
 
   // Add a response interceptor
   instance.interceptors.response.use(

@@ -11,6 +11,8 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   HomeOutlined,
+  StarOutlined,
+  InboxOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useCurrentApp } from '../../context/app.context';
@@ -99,6 +101,18 @@ const AdminLayout = () => {
       onClick: () => navigate('/admin/brands'),
     },
     {
+      key: '/admin/reviews',
+      icon: <StarOutlined />,
+      label: 'Quản lý đánh giá',
+      onClick: () => navigate('/admin/reviews'),
+    },
+    {
+      key: '/admin/inventory',
+      icon: <InboxOutlined />,
+      label: 'Quản lý tồn kho',
+      onClick: () => navigate('/admin/inventory'),
+    },
+    {
       key: '/admin/analytics',
       icon: <BarChartOutlined />,
       label: 'Thống kê',
@@ -122,6 +136,7 @@ const AdminLayout = () => {
     if (path.startsWith('/admin/orders')) return '/admin/orders';
     if (path.startsWith('/admin/users')) return '/admin/users';
     if (path.startsWith('/admin/brands')) return '/admin/brands';
+    if (path.startsWith('/admin/reviews')) return '/admin/reviews';
     if (path.startsWith('/admin/analytics')) return '/admin/analytics';
     return '/admin';
   };

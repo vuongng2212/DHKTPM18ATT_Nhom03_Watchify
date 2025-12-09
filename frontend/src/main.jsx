@@ -29,6 +29,8 @@ import ProductsManagement from "./pages/admin/ProductsManagement";
 import OrdersManagement from "./pages/admin/OrdersManagement";
 import UsersManagement from "./pages/admin/UsersManagement";
 import BrandsManagement from "./pages/admin/BrandsManagement";
+import ReviewsManagement from "./pages/admin/ReviewsManagement";
+import InventoryManagement from "./pages/admin/InventoryManagement";
 import Reports from "./pages/admin/Analytics";
 import FormAddProduct from "./pages/admin/FormAddProduct";
 import FormUpdate from "./pages/admin/FormUpdate";
@@ -147,6 +149,14 @@ const router = createBrowserRouter([
       {
         path: "brands",
         element: <BrandsManagement />,
+      },
+      {
+        path: "reviews",
+        element: <ReviewsManagement />,
+      },
+      {
+        path: "inventory",
+        element: <InventoryManagement />,
       },
       {
         path: "analytics",

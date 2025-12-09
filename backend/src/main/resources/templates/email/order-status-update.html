@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cập nhật đơn hàng</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header .icon {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 48px;
+        }
+        .header h1 {
+            margin: 10px 0 0 0;
+            font-size: 26px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #1890ff;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 15px;
+            color: #555555;
+            margin-bottom: 15px;
+        }
+        .status-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+            border: 2px solid #1890ff;
+            padding: 30px;
+            margin: 25px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .status-card .status-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .status-card .status-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1890ff;
+            margin-bottom: 5px;
+        }
+        .status-card .status-description {
+            font-size: 14px;
+            color: #555;
+            margin-top: 10px;
+        }
+        .order-info {
+            background-color: #fafafa;
+            border-left: 4px solid #1890ff;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .order-info h3 {
+            margin-top: 0;
+            color: #1890ff;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #666666;
+            font-weight: 500;
+        }
+        .info-value {
+            color: #333333;
+            font-weight: 600;
+            text-align: right;
+        }
+        .order-code {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+            margin: 25px 0;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 40px;
+            padding-bottom: 30px;
+        }
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 8px;
+            bottom: -30px;
+            width: 2px;
+            background-color: #d9d9d9;
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        .timeline-item .timeline-dot {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background-color: #d9d9d9;
+            border: 3px solid #fff;
+            box-shadow: 0 0 0 2px #d9d9d9;
+        }
+        .timeline-item.active .timeline-dot {
+            background-color: #1890ff;
+            box-shadow: 0 0 0 2px #1890ff;
+        }
+        .timeline-item.completed .timeline-dot {
+            background-color: #52c41a;
+            box-shadow: 0 0 0 2px #52c41a;
+        }
+        .timeline-item .timeline-content {
+            font-size: 14px;
+        }
+        .timeline-item .timeline-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        .timeline-item .timeline-time {
+            font-size: 12px;
+            color: #999;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #1890ff;
+            color: white !important;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 25px 0;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #096dd9;
+        }
+        .cta-container {
+            text-align: center;
+        }
+        .note-box {
+            background-color: #fffbe6;
+            border-left: 4px solid #faad14;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .note-box p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .footer {
+            background-color: #2c3e50;
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+            font-size: 13px;
+        }
+        .footer p {
+            margin: 8px 0;
+            color: #bdc3c7;
+        }
+        .footer a {
+            color: #1890ff;
+            text-decoration: none;
+        }
+        .divider {
+            height: 1px;
+            background-color: #e8e8e8;
+            margin: 25px 0;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 22px;
+            }
+            .info-row {
+                flex-direction: column;
+            }
+            .info-value {
+                text-align: left;
+                margin-top: 5px;
+            }
+            .status-card .status-value {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="icon">📦</div>
+            <h1>Cập nhật trạng thái đơn hàng</h1>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <p class="greeting">Xin chào <span th:text="${fullName}">Quý khách</span>! 👋</p>
+
+            <p class="message">
+                Đơn hàng của bạn có cập nhật mới. Chúng tôi muốn thông báo cho bạn về trạng thái hiện tại của đơn hàng.
+            </p>
+
+            <!-- Status Card -->
+            <div class="status-card">
+                <div class="status-label">Trạng thái hiện tại</div>
+                <div class="status-value" th:text="${statusText}">Đang giao hàng</div>
+                <div class="status-description">
+                    Đơn hàng của bạn đang được xử lý
+                </div>
+            </div>
+
+            <!-- Order Information -->
+            <div class="order-info">
+                <h3>📋 Thông tin đơn hàng</h3>
+                
+                <div class="info-row">
+                    <span class="info-label">Mã đ</h3>ơn hàng:</span>
+                    <span class="info-value">
+                        <span class="order-code" th:text="${orderCode}">ORD-001</span>
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Cập nhật lúc:</span>
+                    <span class="info-value" th:text="${updateDate}">01/01/2024 10:30</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Trạng thái:</span>
+                    <span class="info-value" style="color: #1890ff;">
+                        <strong th:text="${statusText}">Đang giao hàng</strong>
+                    </span>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Timeline -->
+            <h3 style="color: #333; font-size: 16px; margin-bottom: 20px;">📍 Tiến trình đơn hàng</h3>
+            <div class="timeline">
+                <div class="timeline-item completed">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Đơn hàng đã được đặt</div>
+                        <div class="timeline-time">Đã hoàn thành</div>
+                    </div>
+                </div>
+                <div class="timeline-item completed">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Đơn hàng đã được xác nhận</div>
+                        <div class="timeline-time">Đã hoàn thành</div>
+                    </div>
+                </div>
+                <div class="timeline-item active">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Đang xử lý đơn hàng</div>
+                        <div class="timeline-time">Hiện tại</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Đang giao hàng</div>
+                        <div class="timeline-time">Sắp tới</div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">Đã giao hàng</div>
+                        <div class="timeline-time">Sắp tới</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Note Box -->
+            <div class="note-box">
+                <p>
+                    💡 <strong>Lưu ý:</strong> Bạn s</p>ẽ nhận được email thông báo mỗi khi có cập nhật mới về đơn hàng. 
+                    Vui lòng kiểm tra email thường xuyên.
+                </p>
+            </div>
+
+            <!-- CTA Button -->
+            <div class="cta-container">
+                <a th:href="${orderDetailUrl}" class="cta-button">
+                    📱 Xem chi tiết đơn hàng
+                </a>
+            </div>
+
+            <div class="divider"></div>
+
+            <p class="message">
+                <strong>📞 Cần hỗ trợ?</strong><br>
+                Nếu bạn có bất kỳ câu hỏi nào về đơn hàng, vui lòng liên hệ:
+            </p>
+
+            <p class="message" style="padding-left: 20px;">
+                • Email: <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}" 
+                   style="color: #1890ff; text-decoration: none;">support@watchify.com</a><br>
+                • Hotline: 1900-xxxx (8:00 - 22:00 hàng ngày)<br>
+                • Live Chat: Truy cập website để chat trực tiếp
+            </p>
+
+            <p class="message" style="margin-top: 30px;">
+                Cảm ơn bạn đã tin tưởng <strong>Watchify</strong>!
+            </p>
+
+            <p class="message" style="margin-top: 20px;">
+                <strong>Trân trọng,</strong><br>
+                <span style="color: #1890ff; font-weight: 600;">Đội ngũ Watchify</span>
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>WATCHIFY E-COMMERCE</strong></p>
+            <p>Địa chỉ: 123 Đường ABC, Quận 1, TP.HCM</p>
+            <p>Hotline: 1900-xxxx | Email: <span th:text="${supportEmail}">support@watchify.com</span></p>
+            <p style="margin-top: 15px;">
+                <a th:href="${frontendUrl}">Trang chủ</a> | 
+                <a th:href="${orderDetailUrl}">Đơn hàng của tôi</a> | 
+                <a href="#">Chính sách giao hàng</a>
+            </p>
+            <p style="margin-top: 15px; font-size: 12px;">
+                © <span th:text="${currentYear}">2024</span> Watchify. All rights reserved.
+            </p>
+            <p style="font-size: 11px; color: #95a5a6; margin-top: 10px;">
+                Email này được gửi tự động, vui lòng không trả lời.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

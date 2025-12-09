@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đơn hàng đã giao thành công</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header .icon {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 48px;
+        }
+        .header h1 {
+            margin: 10px 0 0 0;
+            font-size: 26px;
+            font-weight: 600;
+        }
+        .header .subtitle {
+            font-size: 14px;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #52c41a;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 15px;
+            color: #555555;
+            margin-bottom: 15px;
+        }
+        .success-card {
+            background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
+            border: 2px solid #52c41a;
+            padding: 30px;
+            margin: 25px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .success-card .icon {
+            font-size: 72px;
+            margin-bottom: 15px;
+            animation: bounce 1s ease infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .success-card .title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #52c41a;
+            margin-bottom: 10px;
+        }
+        .success-card .description {
+            font-size: 15px;
+            color: #555;
+        }
+        .order-info {
+            background-color: #fafafa;
+            border-left: 4px solid #52c41a;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .order-info h3 {
+            margin-top: 0;
+            color: #52c41a;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #666666;
+            font-weight: 500;
+        }
+        .info-value {
+            color: #333333;
+            font-weight: 600;
+            text-align: right;
+        }
+        .order-code {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .rating-box {
+            background: linear-gradient(135deg, #fffbe6 0%, #fff1b8 100%);
+            border: 2px solid #faad14;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .rating-box .title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .rating-box .subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .rating-box .stars {
+            font-size: 32px;
+            margin: 10px 0;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #52c41a;
+            color: white !important;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 10px 10px;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #389e0d;
+        }
+        .cta-button.secondary {
+            background-color: #faad14;
+        }
+        .cta-button.secondary:hover {
+            background-color: #d48806;
+        }
+        .cta-container {
+            text-align: center;
+            margin: 25px 0;
+        }
+        .thank-you-box {
+            background-color: #e6f7ff;
+            border-left: 4px solid #1890ff;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .thank-you-box .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .thank-you-box p {
+            margin: 8px 0;
+            color: #555;
+            font-size: 15px;
+        }
+        .thank-you-box .highlight {
+            color: #1890ff;
+            font-weight: 600;
+            font-size: 18px;
+        }
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 25px 0;
+        }
+        .benefit-card {
+            background-color: #f9f9f9;
+            border: 1px solid #e8e8e8;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .benefit-card .icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        .benefit-card .title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .benefit-card .description {
+            font-size: 11px;
+            color: #666;
+        }
+        .footer {
+            background-color: #2c3e50;
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+            font-size: 13px;
+        }
+        .footer p {
+            margin: 8px 0;
+            color: #bdc3c7;
+        }
+        .footer a {
+            color: #52c41a;
+            text-decoration: none;
+        }
+        .divider {
+            height: 1px;
+            background-color: #e8e8e8;
+            margin: 25px 0;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 22px;
+            }
+            .info-row {
+                flex-direction: column;
+            }
+            .info-value {
+                text-align: left;
+                margin-top: 5px;
+            }
+            .success-card .title {
+                font-size: 24px;
+            }
+            .benefits-grid {
+                grid-template-columns: 1fr;
+            }
+            .cta-button {
+                display: block;
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="icon">✅</div>
+            <h1>Đơn hàng đã giao thành công!</h1>
+            <div class="subtitle">C</h1>ảm ơn bạn đã mua sắm tại Watchify</div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <p class="greeting">Xin chào <span th:text="${fullName}">Quý khách</span>! 👋</p>
+
+            <p class="message">
+                Chúng tôi rất vui khi thông báo rằng đơn hàng của bạn đã được giao thành công! 
+                Hy vọng bạn hài lòng với sản phẩm và dịch vụ của chúng tôi. 🎉
+            </p>
+
+            <!-- Success Card -->
+            <div class="success-card">
+                <div class="icon">🎉</div>
+                <div class="title">Giao hàng thành công!</div>
+                <div class="description">Đơn hàng của bạn đã được giao đến địa chỉ nhận hàng</div>
+            </div>
+
+            <!-- Order Information -->
+            <div class="order-info">
+                <h3>📋 Thông tin đơn hàng</h3>
+                
+                <div class="info-row">
+                    <span class="info-label">Mã đơn hàng:</span>
+                    <span class="info-value">
+                        <span class="order-code" th:text="${orderCode}">ORD-001</span>
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Ngày giao hàng:</span>
+                    <span class="info-value" th:text="${deliveredDate}">01/01/2024 10:30</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Trạng thái:</span>
+                    <span class="info-value" style="color: #52c41a;">
+                        <strong>✅ Đ</strong>ã giao hàng</strong>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Rating Box -->
+            <div class="rating-box">
+                <div class="title">Bạn hài lòng với đơn hàng này?</div>
+                <div class="subtitle">Đánh giá của bạn giúp chúng tôi cải thiện dịch vụ tốt hơn</div>
+                <div class="stars">⭐⭐⭐⭐⭐</div>
+            </div>
+
+            <!-- CTA Buttons -->
+            <div class="cta-container">
+                <a th:href="${reviewUrl}" class="cta-button">
+                    ⭐ Đánh giá sản phẩm
+                </a>
+                <a th:href="${orderDetailUrl}" class="cta-button secondary">
+                    📱 Xem chi tiết đơn hàng
+                </a>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Thank You Box -->
+            <div class="thank-you-box">
+                <div class="icon">💝</div>
+                <p class="highlight">Cảm ơn bạn đã tin tưởng Watchify!</p>
+                <p>Sự hài lòng của bạn là động lực lớn nhất để chúng tôi phát triển</p>
+            </div>
+
+            <!-- Benefits Grid -->
+            <h3 style="color: #333; font-size: 16px; margin-bottom: 15px; text-align: center;">
+                🎁 Ưu đãi dành cho bạn
+            </h3>
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="icon">🎫</div>
+                    <div class="title">Tích điểm thưởng</div>
+                    <div class="description">Nhận điểm cho đơn hàng này</div>
+                </div>
+                <div class="benefit-card">
+                    <div class="icon">🔄</div>
+                    <div class="title">Đổi trả dễ dàng</div>
+                    <div class="description">Trong vòng 7 ngày</div>
+                </div>
+                <div class="benefit-card">
+                    <div class="icon">🛡️</div>
+                    <div class="title">Bảo hành chính hãng</div>
+                    <div class="description">Hỗ trợ toàn diện</div>
+                </div>
+                <div class="benefit-card">
+                    <div class="icon">💬</div>
+                    <div class="title">Hỗ trợ 24/7</div>
+                    <div class="description">Luôn sẵn sàng giúp bạn</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <p class="message">
+                <strong>📞 Cần hỗ trợ?</strong><br>
+                Nếu có bất kỳ vấn đề gì với đơn hàng, vui lòng liên hệ ngay:
+            </p>
+
+            <p class="message" style="padding-left: 20px;">
+                • Email: <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}" 
+                   style="color: #52c41a; text-decoration: none;">support@watchify.com</a><br>
+                • Hotline: 1900-xxxx (8:00 - 22:00 hàng ngày)<br>
+                • Live Chat: Truy cập website để chat trực tiếp
+            </p>
+
+            <p class="message" style="margin-top: 30px; text-align: center; font-size: 16px;">
+                <strong>🌟 Mua sắm tiếp để nhận ưu đãi đặc biệt! 🌟</strong>
+            </p>
+
+            <p class="message" style="margin-top: 20px;">
+                <strong>Trân trọng,</strong><br>
+                <span style="color: #52c41a; font-weight: 600;">Đội ngũ Watchify</span>
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>WATCHIFY E-COMMERCE</strong></p>
+            <p>Địa chỉ: 123 Đường ABC, Quận 1, TP.HCM</p>
+            <p>Hotline: 1900-xxxx | Email: <span th:text="${supportEmail}">support@watchify.com</span></p>
+            <p style="margin-top: 15px;">
+                <a th:href="${frontendUrl}">Trang chủ</a> | 
+                <a th:href="${orderDetailUrl}">Đơn hàng của tôi</a> | 
+                <a href="#">Chính sách bảo hành</a>
+            </p>
+            <p style="margin-top: 15px; font-size: 12px;">
+                © <span th:text="${currentYear}">2024</span> Watchify. All rights reserved.
+            </p>
+            <p style="font-size: 11px; color: #95a5a6; margin-top: 10px;">
+                Email này được gửi tự động, vui lòng không trả lời.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

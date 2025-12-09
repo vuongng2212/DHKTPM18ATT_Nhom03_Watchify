@@ -225,9 +225,12 @@ export const rejectReviewApi = (reviewId) => {
   return axiosReview.put(`/api/v1/reviews/${reviewId}/reject`);
 };
 
-export const chatbotApi = (data) => {
-  return axiosChatbot.post("/api/chatbot", data);
+// AI Chatbot API (Gemini) — khớp với AiChatController (POST /api/v1/ai/chat)
+export const chatbotApi = ({ message }) => {
+  return axiosChatbot.post("/api/v1/ai/chat", { message });
 };
+
+
 
 export const getRolesApi = () => {
   console.log(`📥 [API] Fetching roles`);

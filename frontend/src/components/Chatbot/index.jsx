@@ -37,34 +37,43 @@ const Chatbot = () => {
   }, [input, isOpen]);
 
   const handleSendMessage = debounce(async () => {
-    if (!input.trim()) return;
+  if (!input.trim()) return;
 
-    setMessages([...messages, { sender: "user", text: input }]);
-    setInput("");
-    if (inputRef.current) inputRef.current.focus();
+  const currentInput = input; // lưu lại để gửi API
+  // hiển thị message của user
+  setMessages((prev) => [...prev, { sender: "user", text: currentInput }]);
+  setInput("");
+  if (inputRef.current) inputRef.current.focus();
 
-    setIsLoading(true);
+  setIsLoading(true);
 
-    try {
-      const response = await chatbotApi({
-        message: input,
-        sessionId: sessionId,
-      });
-      const botResponse = response.reply;
-      setMessages((prev) => [...prev, { sender: "bot", text: botResponse }]);
-    } catch (error) {
-      console.error("Error calling backend API:", error.message);
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "bot",
-          text: "Xin lỗi, tôi không thể trả lời ngay lúc này. Bạn có thể hỏi thêm về đồng hồ không?",
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, 100);
+  try {
+    // ✅ BE chỉ nhận { message }
+    const response = await chatbotApi({
+      message: currentInput,
+    });
+
+    // response là AiChatResponse { reply, model, productCount }
+    const botResponse =
+      response?.reply ||
+      "Xin lỗi, hiện tại trợ lý chưa trả về nội dung phù hợp.";
+
+    setMessages((prev) => [...prev, { sender: "bot", text: botResponse }]);
+  } catch (error) {
+    console.error("Error calling backend API:", error);
+    setMessages((prev) => [
+      ...prev,
+      {
+        sender: "bot",
+        text:
+          "Xin lỗi, tôi không thể trả lời ngay lúc này. Bạn hãy thử lại sau.",
+      },
+    ]);
+  } finally {
+    setIsLoading(false);
+  }
+}, 100);
+
 
   return (
     <div className="fixed bottom-5 right-5 z-50">

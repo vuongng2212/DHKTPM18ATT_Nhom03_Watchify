@@ -1,0 +1,499 @@
+@startuml Complete System - Class Diagram
+
+!define IDENTITY_COLOR #E8F5E9
+!define CATALOG_COLOR #E3F2FD
+!define ORDER_COLOR #FFF3E0
+!define PAYMENT_COLOR #FCE4EC
+!define PROMOTION_COLOR #F3E5F5
+!define INVENTORY_COLOR #FFF8E1
+!define ENUM_COLOR #FFF9C4
+
+skinparam class {
+    ArrowColor #424242
+    FontSize 10
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+
+title Watchify E-commerce System - Complete Class Diagram\n(Modular Monolith Architecture)
+
+' ================== IDENTITY MODULE ==================
+package "Identity Module" IDENTITY_COLOR {
+    
+    class User <<Entity, Aggregate Root>> {
+        - UUID id
+        - String email {unique}
+        - String password
+        - String firstName
+        - String lastName
+        - String phone
+        - UserStatus status
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        __
+        + getFullName(): String
+        + isActive(): boolean
+        + hasRole(String): boolean
+    }
+    
+    class Role <<Entity>> {
+        - UUID id
+        - String name {unique}
+        - String description
+    }
+    
+    class Address <<Entity>> {
+        - UUID id
+        - UUID userId
+        - String fullName
+        - String phone
+        - String street
+        - String ward
+        - String district
+        - String city
+        - AddressType type
+        - Boolean isDefault
+        __
+        + getFullAddress(): String
+    }
+    
+    class RefreshToken <<Entity>> {
+        - UUID id
+        - UUID userId
+        - String token
+        - LocalDateTime expiryDate
+        - Boolean revoked
+        __
+        + isValid(): boolean
+    }
+    
+    enum UserStatus ENUM_COLOR {
+        ACTIVE
+        INACTIVE
+        LOCKED
+        DELETED
+    }
+    
+    enum AddressType ENUM_COLOR {
+        HOME
+        OFFICE
+        OTHER
+    }
+}
+
+' ================== CATALOG MODULE ==================
+package "Catalog Module" CATALOG_COLOR {
+    
+    class Product <<Entity, Aggregate Root>> {
+        - UUID id
+        - String name
+        - String slug {unique}
+        - String sku {unique}
+        - String description
+        - String shortDescription
+        - BigDecimal price
+        - BigDecimal originalPrice
+        - Integer discountPercentage
+        - ProductStatus status
+        - UUID categoryId
+        - UUID brandId
+        - Long viewCount
+        - Boolean isFeatured
+        - Boolean isNew
+        - Integer displayOrder
+        __
+        + isAvailable(): boolean
+        + isOnSale(): boolean
+        + incrementViewCount(): void
+    }
+    
+    class Category <<Entity>> {
+        - UUID id
+        - String name
+        - String slug {unique}
+        - String description
+        - UUID parentId
+        - Integer displayOrder
+        - Boolean isActive
+        __
+        + isRootCategory(): boolean
+    }
+    
+    class Brand <<Entity>> {
+        - UUID id
+        - String name
+        - String slug {unique}
+        - String description
+        - String logoUrl
+        - String websiteUrl
+        - Boolean isActive
+    }
+    
+    class ProductImage <<Entity>> {
+        - UUID id
+        - UUID productId
+        - String imageUrl
+        - Integer displayOrder
+        - Boolean isPrimary
+    }
+    
+    class ProductDetail <<Entity>> {
+        - UUID id
+        - UUID productId
+        - String caseDiameter
+        - String caseThickness
+        - String caseMaterial
+        - String bandMaterial
+        - String movementType
+        - String waterResistance
+        - String features
+    }
+    
+    class Review <<Entity>> {
+        - UUID id
+        - UUID productId
+        - UUID userId
+        - Integer rating
+        - String title
+        - String comment
+        - LocalDateTime createdAt
+        __
+        + isPositive(): boolean
+    }
+    
+    class Wishlist <<Entity>> {
+        - UUID id
+        - UUID userId
+        - UUID productId
+        - LocalDateTime addedAt
+    }
+    
+    class Cart <<Entity>> {
+        - UUID id
+        - UUID userId
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        __
+        + getTotalAmount(): BigDecimal
+        + getTotalItems(): Integer
+    }
+    
+    class CartItem <<Entity>> {
+        - UUID id
+        - UUID cartId
+        - UUID productId
+        - Integer quantity
+        - LocalDateTime addedAt
+        __
+        + getSubtotal(): BigDecimal
+    }
+    
+    enum ProductStatus ENUM_COLOR {
+        ACTIVE
+        OUT_OF_STOCK
+        DISCONTINUED
+    }
+}
+
+' ================== INVENTORY MODULE ==================
+package "Inventory Module" INVENTORY_COLOR {
+    
+    class Inventory <<Entity>> {
+        - UUID id
+        - UUID productId {unique}
+        - Integer quantity
+        - Integer reservedQuantity
+        - String location
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        __
+        + getAvailableQuantity(): Integer
+        + isInStock(): boolean
+        + reserve(Integer): void
+        + release(Integer): void
+        + confirmReservation(Integer): void
+    }
+}
+
+' ================== ORDER MODULE ==================
+package "Order Module" ORDER_COLOR {
+    
+    class Order <<Entity, Aggregate Root>> {
+        - UUID id
+        - UUID userId
+        - BigDecimal totalAmount
+        - UUID couponId
+        - String couponCode
+        - BigDecimal discountAmount
+        - BigDecimal finalAmount
+        - OrderStatus status
+        - PaymentMethod paymentMethod
+        - String shippingAddress
+        - String billingAddress
+        - String notes
+        - LocalDateTime orderDate
+        __
+        + calculateTotal(): void
+        + canCancel(): boolean
+    }
+    
+    class OrderItem <<Entity>> {
+        - UUID id
+        - UUID orderId
+        - UUID productId
+        - String productName
+        - String productSku
+        - BigDecimal unitPrice
+        - Integer quantity
+        - BigDecimal totalPrice
+        __
+        + calculateItemTotal(): void
+    }
+    
+    enum OrderStatus ENUM_COLOR {
+        PENDING
+        PENDING_PAYMENT
+        CONFIRMED
+        PROCESSING
+        SHIPPING
+        COMPLETED
+        CANCELLED
+        PAYMENT_FAILED
+        REFUNDED
+    }
+    
+    enum PaymentMethod ENUM_COLOR {
+        COD
+        MOMO
+        BANK_TRANSFER
+        VNPAY
+    }
+}
+
+' ================== PAYMENT MODULE ==================
+package "Payment Module" PAYMENT_COLOR {
+    
+    class Payment <<Entity>> {
+        - UUID id
+        - UUID orderId {unique}
+        - BigDecimal amount
+        - PaymentStatus status
+        - PaymentMethod paymentMethod
+        - String transactionId
+        - LocalDateTime paymentDate
+        - String notes
+        __
+        + isPaid(): boolean
+        + markAsPaid(): void
+    }
+    
+    enum PaymentStatus ENUM_COLOR {
+        PENDING
+        PROCESSING
+        COMPLETED
+        FAILED
+        REFUNDED
+        CANCELLED
+    }
+}
+
+' ================== PROMOTION MODULE ==================
+package "Promotion Module" PROMOTION_COLOR {
+    
+    class Coupon <<Entity>> {
+        - UUID id
+        - String code {unique}
+        - String description
+        - DiscountType discountType
+        - BigDecimal discountValue
+        - BigDecimal minOrderAmount
+        - BigDecimal maxDiscountAmount
+        - Integer usageLimit
+        - Integer usedCount
+        - Integer perUserLimit
+        - LocalDateTime validFrom
+        - LocalDateTime validTo
+        - Boolean isActive
+        __
+        + isValid(): boolean
+        + canApplyToOrder(BigDecimal): boolean
+        + calculateDiscount(BigDecimal): BigDecimal
+        + incrementUsageCount(): void
+    }
+    
+    class CouponUsage <<Entity>> {
+        - UUID id
+        - UUID couponId
+        - UUID userId
+        - UUID orderId
+        - BigDecimal discountAmount
+        - LocalDateTime usedAt
+    }
+    
+    enum DiscountType ENUM_COLOR {
+        PERCENTAGE
+        FIXED_AMOUNT
+    }
+}
+
+' =================== RELATIONSHIPS ===================
+
+' Identity Module Internal
+User "1" -- "0..*" Address : owns >
+User "1" -- "0..*" RefreshToken : has >
+User "*" -- "*" Role : has >
+User --> UserStatus
+Address --> AddressType
+
+' Catalog Module Internal
+Product --> ProductStatus
+Product "1" o-- "0..*" ProductImage
+Product "1" o-- "0..1" ProductDetail
+Product "1" o-- "0..*" Review
+Product "*" ..> "1" Category : {categoryId}
+Product "*" ..> "1" Brand : {brandId}
+Category "0..1" <-- "0..*" Category : {parentId}
+
+Cart "1" *-- "0..*" CartItem
+CartItem "*" ..> "1" Product : {productId}
+
+' Cross-Module: Catalog -> Identity
+Review "*" ..> "1" User : {userId}
+Wishlist "*" ..> "1" User : {userId}
+Wishlist "*" ..> "1" Product : {productId}
+Cart "1" ..> "1" User : {userId}
+
+' Inventory -> Catalog
+Inventory "1" -- "1" Product : tracks\n{productId}
+
+' Order Module Internal
+Order "1" *-- "1..*" OrderItem : contains >
+Order --> OrderStatus
+Order --> PaymentMethod
+
+' Cross-Module: Order -> Identity
+Order "*" ..> "1" User : {userId}
+
+' Cross-Module: Order -> Catalog
+OrderItem "*" ..> "1" Product : {productId}
+
+' Payment -> Order
+Payment "0..1" -- "1" Order : {orderId}
+Payment --> PaymentStatus
+Payment --> PaymentMethod
+
+' Promotion Module
+Coupon --> DiscountType
+Coupon "1" -- "0..*" CouponUsage
+
+' Cross-Module: Promotion -> Order
+Order "*" ..> "0..1" Coupon : {couponId}
+CouponUsage "*" ..> "1" Order : {orderId}
+
+' Cross-Module: Promotion -> Identity
+CouponUsage "*" ..> "1" User : {userId}
+
+' =================== NOTES ===================
+
+note as ArchitectureNote
+    **Architecture Pattern: Modular Monolith**
+    - Clear module boundaries
+    - Bounded contexts per module
+    - Potential for future microservices extraction
+    
+    **Module Dependencies:**
+    Identity ← (Catalog, Order, Promotion)
+    Catalog ← (Order, Inventory)
+    Order ← (Payment, Promotion)
+    
+    **No Circular Dependencies**
+end note
+
+note as ImplementationNote
+    **Key Implementation Details:**
+    
+    1. **Foreign Key Pattern:**
+       - All relationships use UUID foreign keys
+       - No JPA bidirectional navigation properties
+       - Service layer handles cross-module queries
+    
+    2. **Base Entity:**
+       - All entities extend BaseEntity
+       - Provides: id, createdAt, updatedAt
+       - UUID as primary key type
+    
+    3. **Snapshot Pattern:**
+       - OrderItem stores product snapshot
+       - Order stores address snapshot
+       - Prevents historical data corruption
+    
+    4. **Aggregate Roots:**
+       - User, Product, Order, Coupon
+       - Enforce consistency boundaries
+       - Transactional boundaries
+    
+    5. **Value Objects:**
+       - Address (can be entity or VO)
+       - ProductDetail (owned lifecycle)
+       - ProductImage (owned lifecycle)
+end note
+
+note as BusinessRulesNote
+    **Critical Business Rules:**
+    
+    1. Inventory Management:
+       - Reserve stock on order creation
+       - Confirm on payment success
+       - Release on order cancellation
+    
+    2. Order Workflow:
+       - Status state machine enforced
+       - Cannot cancel after SHIPPING
+       - Payment required before CONFIRMED
+    
+    3. Coupon Validation:
+       - Time-bounded validity
+       - Usage limit enforcement
+       - Minimum order amount check
+       - Per-user redemption limit
+    
+    4. Price Calculation:
+       - originalPrice for sale items
+       - Coupon discount applied
+       - finalAmount = total - discount
+end note
+
+' =================== LEGEND ===================
+
+legend right
+    **Notation Guide:**
+    
+    **Relationship Types:**
+    --> Dependency (FK reference)
+    -- Association
+    *-- Composition (owns lifecycle)
+    o-- Aggregation (has)
+    ..> Weak dependency (cross-module)
+    
+    **Stereotypes:**
+    <<Entity>> - JPA Entity
+    <<Aggregate Root>> - DDD Pattern
+    <<Enumeration>> - Java Enum
+    
+    **Constraints:**
+    {unique} - Unique constraint
+    {FK} - Foreign key reference
+    
+    **Module Colors:**
+    Green - Identity
+    Blue - Catalog
+    Orange - Order
+    Pink - Payment
+    Purple - Promotion
+    Yellow - Inventory
+endlegend
+
+@enduml

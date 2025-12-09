@@ -1,0 +1,164 @@
+@startuml Identity Module - Class Diagram
+
+!define ENTITY_COLOR #E8F5E9
+!define ENUM_COLOR #FFF9C4
+!define VALUE_COLOR #E3F2FD
+
+skinparam class {
+    BackgroundColor ENTITY_COLOR
+    BorderColor #2E7D32
+    ArrowColor #1976D2
+    FontSize 11
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #F57F17
+}
+
+title Identity Module - Watchify E-commerce System
+
+package "Identity Module" {
+    
+    class User <<Entity>> {
+        - UUID id
+        - String email {unique}
+        - String password
+        - String firstName
+        - String lastName
+        - String phone
+        - UserStatus status
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + getFullName(): String
+        + isActive(): boolean
+        + hasRole(String roleName): boolean
+        + addRole(Role role): void
+        + removeRole(Role role): void
+    }
+    
+    class Role <<Entity>> {
+        - UUID id
+        - String name {unique}
+        - String description
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + isAdminRole(): boolean
+    }
+    
+    class Address <<Entity>> {
+        - UUID id
+        - UUID userId
+        - String fullName
+        - String phone
+        - String street
+        - String ward
+        - String district
+        - String city
+        - String country
+        - AddressType type
+        - Boolean isDefault
+        - LocalDateTime createdAt
+        - LocalDateTime updatedAt
+        --
+        + getFullAddress(): String
+        + setAsDefault(): void
+    }
+    
+    class RefreshToken <<Entity>> {
+        - UUID id
+        - UUID userId
+        - String token {unique}
+        - LocalDateTime expiryDate
+        - Boolean revoked
+        - LocalDateTime createdAt
+        --
+        + isExpired(): boolean
+        + isValid(): boolean
+        + revoke(): void
+    }
+    
+    enum UserStatus <<Enumeration>> ENUM_COLOR {
+        ACTIVE
+        INACTIVE
+        LOCKED
+        DELETED
+        --
+        + isActive(): boolean
+    }
+    
+    enum AddressType <<Enumeration>> ENUM_COLOR {
+        HOME
+        OFFICE
+        OTHER
+        --
+        + getDisplayName(): String
+    }
+    
+    class UserRole <<Join Table>> VALUE_COLOR {
+        - UUID userId
+        - UUID roleId
+    }
+}
+
+' Relationships
+User "1" -- "0..*" Address : owns >
+User "1" -- "0..*" RefreshToken : has >
+User "*" -- "*" Role : has >
+(User, Role) .. UserRole
+
+User --> UserStatus : uses
+Address --> AddressType : has
+
+' Notes
+note right of User
+    **Primary Aggregate Root**
+    - Email serves as username
+    - Password stored as BCrypt hash
+    - Supports multiple roles (RBAC)
+    - Soft delete via status
+    - BaseEntity provides id, createdAt, updatedAt
+end note
+
+note right of Address
+    **Value Object Pattern**
+    - Each user can have multiple addresses
+    - One address marked as default
+    - Snapshot at order time for history
+    - Type categorizes usage context
+end note
+
+note right of RefreshToken
+    **Security Token**
+    - JWT refresh token storage
+    - Revocable for security
+    - Automatic expiry check
+    - One user can have multiple tokens
+      (different devices/sessions)
+end note
+
+note bottom of UserRole
+    **Many-to-Many Join Table**
+    Maps Users to Roles
+    Table name: user_roles
+end note
+
+' Legend
+legend right
+    **Design Patterns Used:**
+    - Aggregate Root: User
+    - Value Object: Address
+    - Enumeration: UserStatus, AddressType
+    - Join Table: UserRole (M:N relationship)
+    
+    **Implementation Notes:**
+    - All entities extend BaseEntity (id, createdAt, updatedAt)
+    - UUIDs used for all primary keys
+    - Foreign keys stored as UUID fields (userId, roleId)
+    - No bidirectional JPA navigation properties
+    - Unidirectional relationships for simplicity
+endlegend
+
+@enduml

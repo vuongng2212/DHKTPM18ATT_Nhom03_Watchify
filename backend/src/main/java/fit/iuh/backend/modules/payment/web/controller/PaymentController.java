@@ -43,7 +43,9 @@ public class PaymentController {
     @Operation(summary = "Handle payment return from gateway", description = "Redirect endpoint after payment completion")
     @GetMapping("/return")
     public ResponseEntity<String> handlePaymentReturn(@RequestParam Map<String, String> params) {
-        log.info("Payment return received: {}", params);
+        log.info("=== PAYMENT RETURN START ===");
+        log.info("Payment return received with {} parameters", params.size());
+        log.info("Full params: {}", params);
 
         try {
             String requestId = params.get("requestId");
@@ -51,7 +53,8 @@ public class PaymentController {
             String transId = params.get("transId");
 
             if (requestId == null || resultCode == null) {
-                log.error("Missing required parameters in payment return");
+                log.error("❌ Missing required parameters in payment return");
+                log.error("requestId: {}, resultCode: {}", requestId, resultCode);
                 return ResponseEntity.status(302)
                         .header("Location", "http://localhost:3001/payment-result?status=error&message=Missing parameters")
                         .build();
@@ -66,7 +69,9 @@ public class PaymentController {
             // Update payment status
             paymentService.updatePaymentStatus(paymentId, status, transId, notes);
 
-            log.info("Payment return processed successfully for requestId: {}", requestId);
+            log.info("✅ Payment return processed successfully for requestId: {}", requestId);
+            log.info("Payment status updated to: {}", status);
+            log.info("Transaction ID: {}", transId);
 
             // Redirect to frontend success/failure page
             String redirectUrl = "http://localhost:3001/payment-result?status=" +
@@ -74,7 +79,10 @@ public class PaymentController {
             return ResponseEntity.status(302).header("Location", redirectUrl).build();
 
         } catch (Exception e) {
-            log.error("Error processing payment return", e);
+            log.error("❌ ERROR processing payment return", e);
+            log.error("Exception type: {}", e.getClass().getName());
+            log.error("Exception message: {}", e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(302)
                     .header("Location", "http://localhost:3001/payment-result?status=error&message=" + e.getMessage())
                     .build();
@@ -86,7 +94,10 @@ public class PaymentController {
     public ResponseEntity<Map<String, String>> processIpn(
             @PathVariable String gateway,
             @RequestParam Map<String, String> ipnData) {
-        log.info("IPN received from {}: {}", gateway, ipnData);
+        log.info("=== IPN CALLBACK START ===");
+        log.info("Gateway: {}", gateway);
+        log.info("IPN data size: {}", ipnData.size());
+        log.info("Full IPN data: {}", ipnData);
 
         try {
             PaymentGatewayService gatewayService = null;
@@ -103,17 +114,26 @@ public class PaymentController {
                     String transactionId = (String) result.get("transactionId");
                     String notes = (String) result.get("notes");
 
+                    log.info("✅ IPN validation successful");
+                    log.info("Updating payment {} to status: {}", paymentId, status);
+                    
                     paymentService.updatePaymentStatus(paymentId, status, transactionId, notes);
+                    log.info("✅ Payment status updated successfully");
                     return ResponseEntity.ok(Map.of("message", "IPN processed successfully"));
                 } else {
                     String error = (String) result.get("error");
+                    log.error("❌ IPN validation failed: {}", error);
                     return ResponseEntity.badRequest().body(Map.of("error", error));
                 }
             } else {
+                log.error("❌ Unsupported gateway: {}", gateway);
                 return ResponseEntity.badRequest().body(Map.of("error", "Unsupported gateway"));
             }
         } catch (Exception e) {
-            log.error("Error processing IPN", e);
+            log.error("❌ ERROR processing IPN", e);
+            log.error("Exception type: {}", e.getClass().getName());
+            log.error("Exception message: {}", e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.internalServerError().body(Map.of("error", "IPN processing failed"));
         }
     }

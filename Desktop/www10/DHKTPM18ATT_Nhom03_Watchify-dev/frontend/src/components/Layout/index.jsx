@@ -4,8 +4,6 @@ import Header from "../Header";
 import Chatbot from "../Chatbot";
 
 function Layout() {
-  console.log(">>> RENDER LAYOUT V2");
-
   return (
     <>
       <Header />

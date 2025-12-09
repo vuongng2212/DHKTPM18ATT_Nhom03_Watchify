@@ -93,7 +93,7 @@ const Chatbot = () => {
       {isOpen && (
         <div className="bg-white rounded-lg shadow-lg w-80 h-96 flex flex-col">
           <div className="bg-red-600 text-white p-3 rounded-t-lg flex justify-between items-center">
-            <h3 className="font-semibold select-none">Watchify Chatbot</h3>
+            <h3 className="font-semibold select-none">T-Five Chatbot</h3>
             <button
               onClick={() => setIsOpen(false)}
               className="text-white cursor-pointer hover:text-gray-300 transition-all duration-300"

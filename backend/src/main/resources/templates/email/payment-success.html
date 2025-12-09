@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán thành công</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header .success-icon {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 48px;
+        }
+        .header h1 {
+            margin: 10px 0 0 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.95;
+            font-size: 16px;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #52c41a;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 15px;
+            color: #555555;
+            margin-bottom: 15px;
+        }
+        .payment-info {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+            border: 2px solid #1890ff;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 8px;
+        }
+        .payment-info h3 {
+            margin-top: 0;
+            color: #1890ff;
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #d9d9d9;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #666666;
+            font-weight: 500;
+        }
+        .info-value {
+            color: #333333;
+            font-weight: 600;
+            text-align: right;
+        }
+        .order-code {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .transaction-id {
+            background-color: #f0f9ff;
+            color: #0958d9;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 14px;
+            font-family: monospace;
+        }
+        .amount-paid {
+            background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+            color: white;
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .amount-paid .label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        .amount-paid .amount {
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .amount-paid .checkmark {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        .success-message {
+            background-color: #f6ffed;
+            border-left: 4px solid #52c41a;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .success-message h3 {
+            margin-top: 0;
+            color: #52c41a;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .success-message p {
+            margin: 8px 0;
+            color: #555555;
+            font-size: 14px;
+        }
+        .next-steps {
+            background-color: #fff7e6;
+            border-left: 4px solid #ffa940;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .next-steps h3 {
+            margin-top: 0;
+            color: #fa8c16;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .next-steps ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .next-steps li {
+            margin: 10px 0;
+            color: #555555;
+            font-size: 14px;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #1890ff;
+            color: white !important;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 10px;
+            transition: background-color 0.3s;
+        }
+        .cta-button:hover {
+            background-color: #096dd9;
+        }
+        .cta-button.secondary {
+            background-color: #52c41a;
+        }
+        .cta-button.secondary:hover {
+            background-color: #389e0d;
+        }
+        .cta-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .footer {
+            background-color: #2c3e50;
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+            font-size: 13px;
+        }
+        .footer p {
+            margin: 8px 0;
+            color: #bdc3c7;
+        }
+        .footer a {
+            color: #1890ff;
+            text-decoration: none;
+        }
+        .divider {
+            height: 1px;
+            background-color: #e8e8e8;
+            margin: 25px 0;
+        }
+        .security-note {
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 13px;
+            color: #666;
+            text-align: center;
+        }
+        .security-note strong {
+            color: #333;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .info-row {
+                flex-direction: column;
+            }
+            .info-value {
+                text-align: left;
+                margin-top: 5px;
+            }
+            .amount-paid .amount {
+                font-size: 28px;
+            }
+            .cta-button {
+                display: block;
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="success-icon">✓</div>
+            <h1>Thanh toán thành công!</h1>
+            <p>Giao dịch của bạn đã được xử lý</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <p class="greeting">Xin chào <span th:text="${fullName}">Quý khách</span>! 👋</p>
+
+            <p class="message">
+                Chúng tôi xác nhận rằng khoản thanh toán cho đơn hàng của bạn đã được xử lý <strong>thành công</strong>!
+            </p>
+
+            <!-- Success Message -->
+            <div class="success-message">
+                <h3>✓ Giao dịch hoàn tất</h3>
+                <p>
+                    <strong>Chúc mừng!</strong> Thanh toán của bạn đã được xác nhận. 
+                    Chúng tôi đang tiến hành xử lý và chuẩn bị đơn hàng để giao đến bạn.
+                </p>
+            </div>
+
+            <!-- Amount Paid -->
+            <div class="amount-paid">
+                <div class="label">Số tiền đã thanh toán</div>
+                <div class="amount">
+                    <span class="checkmark">✓</span>
+                    <span th:text="${amount}">22,500,000 ₫</span>
+                </div>
+            </div>
+
+            <!-- Payment Information -->
+            <div class="payment-info">
+                <h3>💳 Thông tin thanh toán</h3>
+                
+                <div class="info-row">
+                    <span class="info-label">Mã đơn hàng:</span>
+                    <span class="info-value">
+                        <span class="order-code" th:text="${orderCode}">ORD-001</span>
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Mã giao dịch:</span>
+                    <span class="info-value">
+                        <span class="transaction-id" th:text="${transactionId}">TXN-12345678</span>
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Ngày thanh toán:</span>
+                    <span class="info-value" th:text="${paymentDate}">01/01/2024 10:30</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Số tiền:</span>
+                    <span class="info-value" style="color: #52c41a; font-size: 18px;" th:text="${amount}">22,500,000 ₫</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Trạng thái:</span>
+                    <span class="info-value" style="color: #52c41a;">
+                        <strong>✓ Th</strong>ành công</strong>
+                    </span>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Next Steps -->
+            <div class="next-steps">
+                <h3>📦 Tiếp theo sẽ diễn ra gì?</h3>
+                <ul>
+                    <li><strong>Xác nhận đơn hàng:</strong> Đ</li>ơn hàng của bạn đã được xác nhận và thanh toán</li>
+                    <li><strong>Đóng gói:</strong> Sản phẩm sẽ được đóng gói cẩn thận trong vòng 24 giờ</li>
+                    <li><strong>Vận chuyển:</strong> Bạn sẽ nhận được thông báo khi đơn hàng được giao cho đơn vị vận chuyển</li>
+                    <li><strong>Giao hàng:</strong> Đơn hàng sẽ được giao đến địa chỉ của bạn trong 2-5 ngày làm việc</li>
+                </ul>
+            </div>
+
+            <!-- Security Note -->
+            <div class="security-note">
+                🔒 <strong>Bảo mật:</strong> Giao dịch của bạn đã được mã hóa và xử lý an toàn. 
+                Watchify không lưu trữ thông tin thẻ thanh toán của bạn.
+            </div>
+
+            <!-- CTA Buttons -->
+            <div class="cta-container">
+                <a th:href="${orderDetailUrl}" class="cta-button">
+                    📱 Xem chi tiết đơn hàng
+                </a>
+                <a th:href="${frontendUrl}" class="cta-button secondary">
+                    🛍️ Tiếp tục mua sắm
+                </a>
+            </div>
+
+            <div class="divider"></div>
+
+            <p class="message">
+                <strong>📞 Cần hỗ trợ?</strong><br>
+                Nếu bạn có bất kỳ câu hỏi nào về thanh toán hoặc đơn hàng, đừng ngần ngại liên hệ với chúng tôi:
+            </p>
+
+            <p class="message" style="padding-left: 20px;">
+                • Email: <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}" 
+                   style="color: #1890ff; text-decoration: none;">support@watchify.com</a><br>
+                • Hotline: 1900-xxxx (8:00 - 22:00 hàng ngày)<br>
+                • Live Chat: Truy cập website để chat trực tiếp
+            </p>
+
+            <p class="message" style="margin-top: 30px;">
+                Cảm ơn bạn đã tin tưởng và mua sắm tại <strong>Watchify</strong>!
+            </p>
+
+            <p class="message" style="margin-top: 20px;">
+                <strong>Trân trọng,</strong><br>
+                <span style="color: #52c41a; font-weight: 600;">Đội ngũ Watchify</span>
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>WATCHIFY E-COMMERCE</strong></p>
+            <p>Địa chỉ: 123 Đường ABC, Quận 1, TP.HCM</p>
+            <p>Hotline: 1900-xxxx | Email: <span th:text="${supportEmail}">support@watchify.com</span></p>
+            <p style="margin-top: 15px;">
+                <a th:href="${frontendUrl}">Trang chủ</a> | 
+                <a th:href="${orderDetailUrl}">Đơn hàng của tôi</a> | 
+                <a href="#">Chính sách hoàn tiền</a>
+            </p>
+            <p style="margin-top: 15px; font-size: 12px;">
+                © <span th:text="${currentYear}">2024</span> Watchify. All rights reserved.
+            </p>
+            <p style="font-size: 11px; color: #95a5a6; margin-top: 10px;">
+                Email này được gửi tự động, vui lòng không trả lời.<br>
+                Đây là email xác nhận thanh toán, vui lòng lưu giữ để đối chiếu.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

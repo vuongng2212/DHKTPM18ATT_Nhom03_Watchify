@@ -28,6 +28,7 @@ import fit.iuh.backend.modules.identity.domain.entity.UserStatus;
 import fit.iuh.backend.modules.identity.domain.repository.RefreshTokenRepository;
 import fit.iuh.backend.modules.identity.domain.repository.RoleRepository;
 import fit.iuh.backend.modules.identity.domain.repository.UserRepository;
+import fit.iuh.backend.modules.notification.application.service.EmailService;
 import fit.iuh.backend.sharedkernel.exception.AccountLockedException;
 import fit.iuh.backend.sharedkernel.exception.DuplicateResourceException;
 import fit.iuh.backend.sharedkernel.exception.InvalidCredentialsException;
@@ -52,6 +53,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserMapper userMapper;
+    private final EmailService emailService;
 
     @Value("${jwt.refresh.expiration}")
     private long refreshTokenExpirationMs;
@@ -104,6 +106,15 @@ public class AuthService {
         // Save user
         User savedUser = userRepository.save(user);
         log.info("User registered successfully with email: {}", savedUser.getEmail());
+
+        // Send welcome email
+        try {
+            String fullName = savedUser.getFirstName() + " " + savedUser.getLastName();
+            emailService.sendWelcomeEmail(savedUser.getEmail(), fullName);
+        } catch (Exception e) {
+            log.error("Failed to send welcome email to: {}", savedUser.getEmail(), e);
+            // Don't fail registration if email fails
+        }
 
         return userMapper.toDto(savedUser);
     }

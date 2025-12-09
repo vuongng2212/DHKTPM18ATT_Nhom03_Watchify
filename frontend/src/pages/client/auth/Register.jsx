@@ -29,29 +29,33 @@ const RegisterPage = () => {
         phone,
       });
 
-      if (registerRes) {
-        // Auto login after register
-        const loginRes = await loginApi({ email, password });
-        if (loginRes?.token) {
-          localStorage.setItem("accessToken", loginRes.token);
-          setUser(loginRes.user);
-          setIsAuthenticated(true);
-          messageApi.open({
-            type: "success",
-            content: "Đăng ký thành công!",
-          });
-          navigate("/");
-        } else {
-          messageApi.open({
-            type: "error",
-            content: "Đăng ký thành công nhưng đăng nhập thất bại. Vui lòng đăng nhập lại.",
-          });
-        }
-      } else {
+      // Check if registration failed (backend error response)
+      if (registerRes.status >= 400 || registerRes.errorCode) {
         messageApi.open({
           type: "error",
           content: registerRes.message || "Đăng ký thất bại.",
         });
+        setIsSubmit(false);
+        return;
+      }
+
+      // Registration successful, proceed with auto login
+      const loginRes = await loginApi({ email, password });
+      if (loginRes?.token) {
+        localStorage.setItem("accessToken", loginRes.token);
+        setUser(loginRes.user);
+        setIsAuthenticated(true);
+        messageApi.open({
+          type: "success",
+          content: "Đăng ký thành công!",
+        });
+        navigate("/");
+      } else {
+        messageApi.open({
+          type: "error",
+          content: "Đăng ký thành công nhưng đăng nhập thất bại. Vui lòng đăng nhập lại.",
+        });
+        navigate("/login");
       }
     } catch (error) {
       messageApi.open({

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -21,6 +22,13 @@ import java.util.UUID;
 public class InventoryController {
 
     private final InventoryService inventoryService;
+
+    @GetMapping("/all")
+    @Operation(summary = "Get all inventories", description = "Get all inventory items with product details")
+    public ResponseEntity<List<InventoryDto>> getAllInventories() {
+        List<InventoryDto> inventories = inventoryService.getAllInventories();
+        return ResponseEntity.ok(inventories);
+    }
 
     @GetMapping("/product/{productId}")
     @Operation(summary = "Get inventory for product", description = "Get inventory information for a specific product")

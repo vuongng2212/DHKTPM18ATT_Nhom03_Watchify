@@ -1,5 +1,6 @@
 package fit.iuh.backend.modules.payment.application.service;
 
+import fit.iuh.backend.modules.notification.application.service.EmailService;
 import fit.iuh.backend.modules.order.domain.entity.Order;
 import fit.iuh.backend.modules.order.domain.repository.OrderRepository;
 import fit.iuh.backend.modules.payment.application.dto.PaymentDto;
@@ -34,6 +35,7 @@ public class PaymentService {
     private final OrderRepository orderRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentGatewayFactory paymentGatewayFactory;
+    private final EmailService emailService;
 
     @EventListener
     @Transactional
@@ -99,6 +101,9 @@ public class PaymentService {
         eventPublisher.publishEvent(completedEvent);
 
         log.info("COD payment success for order: {}", payment.getOrder().getId());
+
+        // Send payment success email
+        sendPaymentSuccessEmail(payment);
     }
 
     public PaymentDto getPaymentByOrderId(UUID orderId) {
@@ -155,5 +160,30 @@ public class PaymentService {
         }
 
         log.info("Payment {} updated to status: {}", paymentId, status);
+
+        // Send payment success email
+        if (status == PaymentStatus.SUCCESS) {
+            sendPaymentSuccessEmail(payment);
+        }
+    }
+
+    private void sendPaymentSuccessEmail(Payment payment) {
+        try {
+            if (payment.getOrder().getUser() != null) {
+                String fullName = payment.getOrder().getUser().getFirstName() + " " + 
+                                  payment.getOrder().getUser().getLastName();
+                String orderCode = payment.getOrder().getId().toString().substring(0, 8).toUpperCase();
+                
+                emailService.sendPaymentSuccessEmail(
+                    payment.getOrder().getUser().getEmail(),
+                    fullName,
+                    orderCode,
+                    payment.getAmount(),
+                    payment.getTransactionId()
+                );
+            }
+        } catch (Exception e) {
+            log.error("Failed to send payment success email for payment: {}", payment.getId(), e);
+        }
     }
 }

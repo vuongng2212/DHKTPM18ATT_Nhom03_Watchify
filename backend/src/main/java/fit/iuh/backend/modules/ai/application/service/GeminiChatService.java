@@ -43,28 +43,22 @@ public class GeminiChatService {
     /**
      * Execute a chat completion for the provided request.
      */
-    // public AiChatResponse chat(AiChatRequest request) {
-    //     validateConfiguration();
-
-    //     List<ProductDto> products = productService.getAllActiveProducts();
-    //     String catalog = buildProductCatalog(products);
-    //     String composedPrompt = buildPrompt(request.getMessage(), catalog);
-
-    //     String reply = callGemini(composedPrompt);
-
-    //     return AiChatResponse.builder()
-    //             .reply(reply)
-    //             .model(geminiProperties.getModel())
-    //             .productCount(products.size())
-    //             .build();
-    // }
     public AiChatResponse chat(AiChatRequest request) {
-    return AiChatResponse.builder()
-            .reply("Demo: bạn vừa hỏi \"" + request.getMessage() + "\". Tính năng AI sẽ được bật khi cấu hình API key.")
-            .model("demo")
-            .productCount(0)
-            .build();
-}
+        validateConfiguration();
+
+        List<ProductDto> products = productService.getAllActiveProducts();
+        String catalog = buildProductCatalog(products);
+        String composedPrompt = buildPrompt(request.getMessage(), catalog);
+
+        String reply = callGemini(composedPrompt);
+
+        return AiChatResponse.builder()
+                .reply(reply)
+                .model(geminiProperties.getModel())
+                .productCount(products.size())
+                .build();
+    }
+   
 
     private void validateConfiguration() {
         if (!StringUtils.hasText(geminiProperties.getApiKey())) {

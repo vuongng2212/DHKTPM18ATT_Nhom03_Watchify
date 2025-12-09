@@ -5,7 +5,7 @@ import { chatbotApi } from "../../services/api";
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { sender: "bot", text: "Xin chào! Tôi có thể giúp gì về đồng hồ hôm nay?" },
+    { sender: "bot", text: "Xin chào! Tôi có thể giúp gì cho bạn?" },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);

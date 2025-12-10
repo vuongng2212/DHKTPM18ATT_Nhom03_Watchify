@@ -17,7 +17,7 @@ Toàn bộ tài liệu chi tiết về dự án được lưu trữ trong thư m
 
 - **Frontend:** React 19, Vite, Tailwind CSS, Ant Design
 - **Backend:** Spring Boot 3.4.10, Java 21, Spring Security, JWT
-- **Database:** MariaDB
+- **Database:**  MariaDB
 - **Deployment:** Docker, Docker Compose
 
 ## 🚀 Tính năng chính

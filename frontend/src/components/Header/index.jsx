@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { Badge, Dropdown } from "antd";
 import { useCurrentApp } from "../../context/app.context";
 import { logoutApi } from "../../services/api";
-import { getBrands } from "../../apiservice/apiBrand"; // Import API
+import { getBrands } from "../../apiservice/apiBrand"; 
 import logo from "../../assets/logoWatchify.png";
 import searchIcon from "../../assets/search.png";
 import cartIcon from "../../assets/cart.png";

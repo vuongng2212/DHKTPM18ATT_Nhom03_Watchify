@@ -118,7 +118,7 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Merge guest cart with backend cart on login
+  // Merge guest cart with backend cart on  login
   const mergeCart = async (guestCart) => {
     try {
       const mergedCart = await cartService.mergeGuestCart(guestCart);

@@ -53,7 +53,7 @@ const Chatbot = () => {
       message: currentInput,
     });
 
-    // response là AiChatResponse { reply, model, productCount }
+    // response là AiChatResponse {reply, model, productCount}
     const botResponse =
       response?.reply ||
       "Xin lỗi, hiện tại trợ lý chưa trả về nội dung phù hợp.";

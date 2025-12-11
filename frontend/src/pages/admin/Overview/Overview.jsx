@@ -19,7 +19,7 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
-import { getProductsApi, getAllOrdersApi } from '../../../services/api';
+import { getProductsApi, getAllOrdersApi, getMonthlyRevenueApi } from '../../../services/api';
 import { parseJavaDate, formatDateTime } from '../../../utils/dateUtils';
 
 ChartJS.register(
@@ -42,13 +42,23 @@ const Overview = () => {
   });
   const [recentOrders, setRecentOrders] = useState([]);
   const [orderStatusData, setOrderStatusData] = useState({});
-  const [revenueData, setRevenueData] = useState({});
+  const [revenueData, setRevenueData] = useState({
+    labels: ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"],
+    datasets: [{
+      label: 'Doanh thu (VNĐ)',
+      data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      backgroundColor: '#1890ff',
+      borderColor: '#1890ff',
+      borderWidth: 2,
+    }],
+  });
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
+    console.log('📊 [OVERVIEW] ========== START fetchDashboardData ==========');
     setLoading(true);
     try {
       // Fetch products
@@ -60,8 +70,19 @@ const Overview = () => {
       const orders = ordersRes?.orders || [];
       const totalOrders = ordersRes?.totalElements || orders.length || 0;
 
-      // Calculate revenue
-      const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || order.total || 0), 0);
+      // Calculate revenue - EXCLUDE CANCELLED orders to match backend logic
+      console.log('📊 [OVERVIEW] Calculating revenue from orders...');
+      const totalRevenue = orders.reduce((sum, order) => {
+        // Skip cancelled orders
+        if (order.status === 'CANCELLED') {
+          console.log(`📊 [OVERVIEW]   ⚠️ Skipping CANCELLED order: ${order.id}`);
+          return sum;
+        }
+        const amount = order.totalAmount || order.total || 0;
+        console.log(`📊 [OVERVIEW]   ✅ Order ${order.id}: ${amount} VND (${order.status})`);
+        return sum + amount;
+      }, 0);
+      console.log(`📊 [OVERVIEW] Total revenue (excl. CANCELLED): ${totalRevenue} VND`);
 
       // Get unique customers
       const uniqueCustomers = new Set(orders.map(order => order.user?.id)).size;
@@ -116,10 +137,59 @@ const Overview = () => {
           },
         ],
       });
+
+      // Fetch monthly revenue from backend
+      console.log('📊 [OVERVIEW] Fetching monthly revenue...');
+      try {
+        const currentYear = new Date().getFullYear();
+        console.log(`📊 [OVERVIEW] Current year: ${currentYear}`);
+        const revenueRes = await getMonthlyRevenueApi(currentYear);
+        console.log('📊 [OVERVIEW] Revenue API response:', revenueRes);
+        
+        if (revenueRes?.monthlyRevenues && revenueRes.monthlyRevenues.length > 0) {
+          console.log(`📊 [OVERVIEW] Processing ${revenueRes.monthlyRevenues.length} months of data`);
+          const months = [];
+          const revenues = [];
+          
+          // Ensure all 12 months are present
+          for (let i = 1; i <= 12; i++) {
+            const monthData = revenueRes.monthlyRevenues.find(m => m.month === i);
+            months.push(`T${i}`);
+            revenues.push(monthData ? monthData.totalRevenue : 0);
+            
+            if (monthData) {
+              console.log(`📊 [OVERVIEW]   ✅ T${i}: ${monthData.totalRevenue} VND (${monthData.orderCount} orders)`);
+            } else {
+              console.log(`📊 [OVERVIEW]   ⚠️ T${i}: 0 VND (no data)`);
+            }
+          }
+          
+          setRevenueData({
+            labels: months,
+            datasets: [{
+              label: 'Doanh thu (VNĐ)',
+              data: revenues,
+              backgroundColor: '#1890ff',
+              borderColor: '#1890ff',
+              borderWidth: 2,
+            }],
+          });
+          console.log('📊 [OVERVIEW] ✅ Revenue chart updated with real data');
+          console.log(`📊 [OVERVIEW] Total revenue: ${revenueRes.totalRevenue} VND`);
+          console.log(`📊 [OVERVIEW] Total orders: ${revenueRes.totalOrders}`);
+        } else {
+          console.warn('📊 [OVERVIEW] ⚠️ No monthly revenue data available');
+        }
+      } catch (error) {
+        console.error('📊 [OVERVIEW] ❌ Error fetching monthly revenue:', error);
+        console.error('📊 [OVERVIEW] Error details:', error.message);
+      }
+
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('📊 [OVERVIEW] ❌ Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
+      console.log('📊 [OVERVIEW] ========== END fetchDashboardData ==========');
     }
   };
 

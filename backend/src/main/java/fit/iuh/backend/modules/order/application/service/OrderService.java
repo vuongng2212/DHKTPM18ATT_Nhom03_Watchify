@@ -7,9 +7,11 @@ import fit.iuh.backend.modules.identity.domain.repository.UserRepository;
 import fit.iuh.backend.modules.notification.application.service.EmailService;
 import fit.iuh.backend.modules.order.application.dto.CreateGuestOrderRequest;
 import fit.iuh.backend.modules.order.application.dto.CreateOrderRequest;
+import fit.iuh.backend.modules.order.application.dto.MonthlyRevenueDto;
 import fit.iuh.backend.modules.order.application.dto.OrderDto;
 import fit.iuh.backend.modules.order.application.dto.OrderItemRequest;
 import fit.iuh.backend.modules.order.application.dto.OrderListResponse;
+import fit.iuh.backend.modules.order.application.dto.RevenueAnalyticsResponse;
 import fit.iuh.backend.modules.order.application.mapper.OrderMapper;
 import fit.iuh.backend.modules.order.domain.entity.Order;
 import fit.iuh.backend.modules.order.domain.entity.OrderItem;
@@ -30,8 +32,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Year;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -309,5 +311,92 @@ public class OrderService {
             case "CANCELLED" -> OrderStatus.CANCELLED;
             default -> throw new IllegalArgumentException("Unknown status: " + vietnameseStatus);
         };
+    }
+
+    public RevenueAnalyticsResponse getMonthlyRevenue(Integer year) {
+        if (year == null) {
+            year = Year.now().getValue();
+        }
+
+        log.info("🔍 [REVENUE DEBUG] ========== START MONTHLY REVENUE CALCULATION ==========");
+        log.info("🔍 [REVENUE DEBUG] Requested year: {}", year);
+
+        // Get monthly revenue data
+        log.info("🔍 [REVENUE DEBUG] Querying repository for monthly revenue data...");
+        List<Object[]> monthlyData = orderRepository.findMonthlyRevenueByYear(year);
+        log.info("🔍 [REVENUE DEBUG] Query returned {} months of data", monthlyData != null ? monthlyData.size() : 0);
+        
+        // Get yearly stats
+        log.info("🔍 [REVENUE DEBUG] Querying repository for yearly stats...");
+        Object[] yearlyStats = orderRepository.findYearlyRevenueStats(year);
+        log.info("🔍 [REVENUE DEBUG] Yearly stats: {}", yearlyStats != null ? "Available" : "NULL");
+
+        // Convert to DTOs
+        List<MonthlyRevenueDto> monthlyRevenues = new ArrayList<>();
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        Long totalOrders = 0L;
+
+        log.info("🔍 [REVENUE DEBUG] Converting query results to DTOs...");
+        int rowIndex = 0;
+        for (Object[] row : monthlyData) {
+            rowIndex++;
+            Integer month = ((Number) row[0]).intValue();
+            Integer rowYear = ((Number) row[1]).intValue();
+            BigDecimal revenue = (BigDecimal) row[2];
+            Long orderCount = ((Number) row[3]).longValue();
+            BigDecimal avgOrderValue = row[4] != null ? (BigDecimal) row[4] : BigDecimal.ZERO;
+
+            log.debug("🔍 [REVENUE DEBUG] Row {}: Month={}, Year={}, Revenue={}, Orders={}, AvgValue={}", 
+                    rowIndex, month, rowYear, revenue, orderCount, avgOrderValue);
+
+            MonthlyRevenueDto dto = MonthlyRevenueDto.builder()
+                    .month(month)
+                    .year(rowYear)
+                    .totalRevenue(revenue != null ? revenue : BigDecimal.ZERO)
+                    .orderCount(orderCount)
+                    .averageOrderValue(avgOrderValue)
+                    .build();
+
+            monthlyRevenues.add(dto);
+            totalRevenue = totalRevenue.add(revenue != null ? revenue : BigDecimal.ZERO);
+            totalOrders += orderCount;
+
+            log.info("🔍 [REVENUE DEBUG] Month T{}: Revenue={} VND, Orders={}", 
+                    month, revenue != null ? revenue : BigDecimal.ZERO, orderCount);
+        }
+
+        log.info("🔍 [REVENUE DEBUG] Total months processed: {}", monthlyRevenues.size());
+        log.info("🔍 [REVENUE DEBUG] Accumulated total revenue: {} VND", totalRevenue);
+        log.info("🔍 [REVENUE DEBUG] Accumulated total orders: {}", totalOrders);
+
+        // Use yearly stats if available
+        if (yearlyStats != null && yearlyStats.length >= 2) {
+            BigDecimal yearlyRevenue = yearlyStats[0] != null ? (BigDecimal) yearlyStats[0] : null;
+            Long yearlyOrders = yearlyStats[1] != null ? ((Number) yearlyStats[1]).longValue() : null;
+            
+            log.info("🔍 [REVENUE DEBUG] Yearly stats override: Revenue={} VND, Orders={}", 
+                    yearlyRevenue, yearlyOrders);
+            
+            totalRevenue = yearlyRevenue != null ? yearlyRevenue : totalRevenue;
+            totalOrders = yearlyOrders != null ? yearlyOrders : totalOrders;
+        } else {
+            log.warn("🔍 [REVENUE DEBUG] Yearly stats not available, using accumulated values");
+        }
+
+        RevenueAnalyticsResponse response = RevenueAnalyticsResponse.builder()
+                .monthlyRevenues(monthlyRevenues)
+                .totalRevenue(totalRevenue)
+                .totalOrders(totalOrders)
+                .year(year)
+                .build();
+
+        log.info("🔍 [REVENUE DEBUG] ========== FINAL RESPONSE ==========");
+        log.info("🔍 [REVENUE DEBUG] Year: {}", response.getYear());
+        log.info("🔍 [REVENUE DEBUG] Total Revenue: {} VND", response.getTotalRevenue());
+        log.info("🔍 [REVENUE DEBUG] Total Orders: {}", response.getTotalOrders());
+        log.info("🔍 [REVENUE DEBUG] Monthly data count: {}", response.getMonthlyRevenues().size());
+        log.info("🔍 [REVENUE DEBUG] ========== END MONTHLY REVENUE CALCULATION ==========");
+
+        return response;
     }
 }

@@ -19,6 +19,7 @@ import {
   getUsersApi,
   updateProfileApi as updateUserApi,
   getRolesApi,
+  getMonthlyRevenueApi,
 } from "../../services/api";
 import { Drawer, Spin, Modal, Form, Input, Select } from "antd";
 import { useCurrentApp } from "../../context/app.context";
@@ -83,10 +84,135 @@ const Dashboard = () => {
       console.log("DashBoard: Starting fetchData");
       await fetchBrandsData();
       await fetchProducts();
+      await fetchMonthlyRevenue();
       console.log("DashBoard: fetchData completed");
     };
     fetchData();
   }, []);
+
+  const fetchMonthlyRevenue = async () => {
+    console.log("📊 [DASHBOARD] ========== START fetchMonthlyRevenue ==========");
+    const startTime = Date.now();
+    
+    try {
+      const currentYear = new Date().getFullYear();
+      console.log(`📊 [DASHBOARD] Current year: ${currentYear}`);
+      console.log(`📊 [DASHBOARD] Calling getMonthlyRevenueApi(${currentYear})...`);
+      
+      const revenueRes = await getMonthlyRevenueApi(currentYear);
+      const executionTime = Date.now() - startTime;
+      
+      console.log(`📊 [DASHBOARD] ✅ API response received (${executionTime}ms)`);
+      console.log(`📊 [DASHBOARD] Response data:`, revenueRes);
+      console.log(`📊 [DASHBOARD] Response type: ${typeof revenueRes}`);
+      console.log(`📊 [DASHBOARD] Has monthlyRevenues: ${!!revenueRes?.monthlyRevenues}`);
+      console.log(`📊 [DASHBOARD] monthlyRevenues length: ${revenueRes?.monthlyRevenues?.length || 0}`);
+      
+      if (revenueRes?.monthlyRevenues && revenueRes.monthlyRevenues.length > 0) {
+        console.log(`📊 [DASHBOARD] Processing ${revenueRes.monthlyRevenues.length} months of data...`);
+        console.log(`📊 [DASHBOARD] Raw monthly data:`, revenueRes.monthlyRevenues);
+        
+        const months = [];
+        const revenues = [];
+        
+        // Ensure all 12 months are present
+        console.log(`📊 [DASHBOARD] Building complete 12-month dataset...`);
+        for (let i = 1; i <= 12; i++) {
+          const monthData = revenueRes.monthlyRevenues.find(m => m.month === i);
+          const monthLabel = `T${i}`;
+          const revenueValue = monthData ? monthData.totalRevenue : 0;
+          
+          months.push(monthLabel);
+          revenues.push(revenueValue);
+          
+          if (monthData) {
+            console.log(`📊 [DASHBOARD]   ✅ ${monthLabel}: ${revenueValue} VND (${monthData.orderCount} orders)`);
+          } else {
+            console.log(`📊 [DASHBOARD]   ⚠️ ${monthLabel}: 0 VND (no data)`);
+          }
+        }
+        
+        console.log(`📊 [DASHBOARD] Final chart labels:`, months);
+        console.log(`📊 [DASHBOARD] Final chart data:`, revenues);
+        console.log(`📊 [DASHBOARD] Total data points: ${revenues.length}`);
+        console.log(`📊 [DASHBOARD] Sum of all revenues: ${revenues.reduce((a, b) => a + b, 0)} VND`);
+        
+        const chartData = {
+          labels: months,
+          datasets: [
+            {
+              label: "Doanh thu (VNĐ)",
+              data: revenues,
+              backgroundColor: "#A61C28",
+              borderColor: "#A61C28",
+              borderWidth: 1,
+            },
+          ],
+        };
+        
+        console.log(`📊 [DASHBOARD] Setting barData state with:`, chartData);
+        setBarData(chartData);
+        console.log(`📊 [DASHBOARD] ✅ Bar chart data updated successfully`);
+        console.log(`📊 [DASHBOARD] Total revenue for ${currentYear}: ${revenueRes.totalRevenue} VND`);
+        console.log(`📊 [DASHBOARD] Total orders for ${currentYear}: ${revenueRes.totalOrders}`);
+      } else {
+        console.warn(`📊 [DASHBOARD] ⚠️ No monthly revenue data available`);
+        console.warn(`📊 [DASHBOARD] Response structure:`, {
+          hasResponse: !!revenueRes,
+          hasMonthlyRevenues: !!revenueRes?.monthlyRevenues,
+          isArray: Array.isArray(revenueRes?.monthlyRevenues),
+          length: revenueRes?.monthlyRevenues?.length
+        });
+        
+        // Set empty data
+        console.log(`📊 [DASHBOARD] Setting empty chart data...`);
+        setBarData({
+          labels: ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"],
+          datasets: [
+            {
+              label: "Doanh thu (VNĐ)",
+              data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              backgroundColor: "#A61C28",
+              borderColor: "#A61C28",
+              borderWidth: 1,
+            },
+          ],
+        });
+      }
+      
+      console.log(`📊 [DASHBOARD] ========== END fetchMonthlyRevenue (${Date.now() - startTime}ms) ==========`);
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      console.error(`📊 [DASHBOARD] ========== ERROR in fetchMonthlyRevenue ==========`);
+      console.error(`📊 [DASHBOARD] ❌ Failed after ${executionTime}ms`);
+      console.error(`📊 [DASHBOARD] Error:`, error);
+      console.error(`📊 [DASHBOARD] Error message: ${error.message}`);
+      console.error(`📊 [DASHBOARD] Error stack:`, error.stack);
+      console.error(`📊 [DASHBOARD] Error name: ${error.name}`);
+      
+      if (error.response) {
+        console.error(`📊 [DASHBOARD] Error response status: ${error.response.status}`);
+        console.error(`📊 [DASHBOARD] Error response data:`, error.response.data);
+      }
+      
+      // Set empty data on error
+      console.log(`📊 [DASHBOARD] Setting fallback empty chart data...`);
+      setBarData({
+        labels: ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"],
+        datasets: [
+          {
+            label: "Doanh thu (VNĐ)",
+            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            backgroundColor: "#A61C28",
+            borderColor: "#A61C28",
+            borderWidth: 1,
+          },
+        ],
+      });
+      
+      console.error(`📊 [DASHBOARD] ========== END ERROR ==========`);
+    }
+  };
 
   const fetchBrandsData = async () => {
     console.log("DashBoard: Starting fetchBrandsData");
@@ -237,18 +363,18 @@ const Dashboard = () => {
   }, [ordersPage, itemsPerPage]);
 
   // Dữ liệu biểu đồ
-  const barData = {
-    labels: ["1 Aug", "2 Aug", "3 Aug", "4 Aug", "5 Aug", "6 Aug"],
+  const [barData, setBarData] = useState({
+    labels: ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"],
     datasets: [
       {
-        label: "Doanh thu (triệu đồng)",
-        data: [15, 10, 25, 20, 30, 18],
+        label: "Doanh thu (VNĐ)",
+        data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         backgroundColor: "#A61C28",
         borderColor: "#A61C28",
         borderWidth: 1,
       },
     ],
-  };
+  });
 
   const doughnutData = {
     labels: ["Desktop", "Tablet", "Mobile"],

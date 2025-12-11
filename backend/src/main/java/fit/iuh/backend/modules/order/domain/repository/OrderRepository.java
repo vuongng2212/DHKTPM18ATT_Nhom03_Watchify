@@ -27,4 +27,35 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     @Query("SELECT o FROM Order o WHERE o.user.id = :userId AND o.status = :status ORDER BY o.orderDate DESC")
     List<Order> findByUserIdAndStatus(@Param("userId") UUID userId, @Param("status") OrderStatus status);
+
+    /**
+     * Get monthly revenue data for a specific year.
+     * Returns: month, year, totalRevenue, orderCount, averageOrderValue
+     */
+    @Query(value = """
+        SELECT 
+            MONTH(o.order_date) as month,
+            YEAR(o.order_date) as year,
+            CAST(SUM(CASE WHEN o.status != 'CANCELLED' THEN o.total_amount ELSE 0 END) AS DECIMAL(15,2)) as totalRevenue,
+            COUNT(*) as orderCount,
+            CAST(AVG(CASE WHEN o.status != 'CANCELLED' THEN o.total_amount ELSE 0 END) AS DECIMAL(15,2)) as averageOrderValue
+        FROM orders o
+        WHERE YEAR(o.order_date) = :year
+        GROUP BY YEAR(o.order_date), MONTH(o.order_date)
+        ORDER BY YEAR(o.order_date), MONTH(o.order_date)
+        """, nativeQuery = true)
+    List<Object[]> findMonthlyRevenueByYear(@Param("year") Integer year);
+
+    /**
+     * Get yearly revenue statistics for a specific year.
+     * Returns: totalRevenue, totalOrders
+     */
+    @Query(value = """
+        SELECT 
+            CAST(SUM(CASE WHEN o.status != 'CANCELLED' THEN o.total_amount ELSE 0 END) AS DECIMAL(15,2)) as totalRevenue,
+            COUNT(*) as totalOrders
+        FROM orders o
+        WHERE YEAR(o.order_date) = :year
+        """, nativeQuery = true)
+    Object[] findYearlyRevenueStats(@Param("year") Integer year);
 }

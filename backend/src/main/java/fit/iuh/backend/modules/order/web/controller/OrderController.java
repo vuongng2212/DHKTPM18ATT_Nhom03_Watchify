@@ -5,6 +5,7 @@ import fit.iuh.backend.modules.order.application.dto.CreateGuestOrderRequest;
 import fit.iuh.backend.modules.order.application.dto.CreateOrderRequest;
 import fit.iuh.backend.modules.order.application.dto.OrderDto;
 import fit.iuh.backend.modules.order.application.dto.OrderListResponse;
+import fit.iuh.backend.modules.order.application.dto.RevenueAnalyticsResponse;
 import fit.iuh.backend.modules.order.application.dto.UpdateOrderStatusRequest;
 import fit.iuh.backend.modules.order.application.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -82,6 +83,56 @@ public class OrderController {
         OrderListResponse response = orderService.getAllOrders(page, size);
         log.info("OrderController: getAllOrders returning {} orders for page {}", response.getOrders().size(), page);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/analytics/monthly-revenue")
+    @Operation(summary = "Get monthly revenue analytics", description = "Get revenue by month for a specific year")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<RevenueAnalyticsResponse> getMonthlyRevenue(
+            @Parameter(description = "Year (defaults to current year)") @RequestParam(required = false) Integer year
+    ) {
+        log.info("📊 [CONTROLLER] ========== Monthly Revenue Request ==========");
+        log.info("📊 [CONTROLLER] Endpoint: GET /api/v1/orders/analytics/monthly-revenue");
+        log.info("📊 [CONTROLLER] Request parameter - year: {}", year != null ? year : "null (will default to current year)");
+        
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            log.info("📊 [CONTROLLER] Calling OrderService.getMonthlyRevenue()...");
+            RevenueAnalyticsResponse response = orderService.getMonthlyRevenue(year);
+            
+            long executionTime = System.currentTimeMillis() - startTime;
+            
+            log.info("📊 [CONTROLLER] ========== Response Summary ==========");
+            log.info("📊 [CONTROLLER] Execution time: {} ms", executionTime);
+            log.info("📊 [CONTROLLER] Response year: {}", response.getYear());
+            log.info("📊 [CONTROLLER] Total revenue: {} VND", response.getTotalRevenue());
+            log.info("📊 [CONTROLLER] Total orders: {}", response.getTotalOrders());
+            log.info("📊 [CONTROLLER] Monthly data points: {}", response.getMonthlyRevenues().size());
+            
+            // Log each month's data
+            if (response.getMonthlyRevenues() != null && !response.getMonthlyRevenues().isEmpty()) {
+                log.info("📊 [CONTROLLER] Monthly breakdown:");
+                response.getMonthlyRevenues().forEach(monthData -> 
+                    log.info("📊 [CONTROLLER]   - Month {}: Revenue={} VND, Orders={}", 
+                        monthData.getMonth(), 
+                        monthData.getTotalRevenue(), 
+                        monthData.getOrderCount())
+                );
+            } else {
+                log.warn("📊 [CONTROLLER] ⚠️ No monthly revenue data available for year {}", response.getYear());
+            }
+            
+            log.info("📊 [CONTROLLER] ========== Request Completed Successfully ==========");
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            long executionTime = System.currentTimeMillis() - startTime;
+            log.error("📊 [CONTROLLER] ❌ ERROR: Failed to get monthly revenue after {} ms", executionTime, e);
+            log.error("📊 [CONTROLLER] Error message: {}", e.getMessage());
+            log.error("📊 [CONTROLLER] Error class: {}", e.getClass().getName());
+            throw e;
+        }
     }
 
     @GetMapping("/{orderId}")

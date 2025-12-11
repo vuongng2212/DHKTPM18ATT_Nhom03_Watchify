@@ -159,6 +159,58 @@ export const updateOrderStatusApi = (orderId, trangThaiDonHang) => {
   return axiosOrder.put(`/api/v1/orders/${orderId}/status`, { trangThaiDonHang });
 };
 
+export const getMonthlyRevenueApi = (year) => {
+  console.log("📊 [API] ========== getMonthlyRevenueApi Call ==========");
+  console.log(`📊 [API] Requesting monthly revenue data`);
+  console.log(`📊 [API] Year parameter: ${year || 'null (will use current year)'}`);
+  
+  const params = year ? { year } : {};
+  console.log(`📊 [API] Request params:`, params);
+  console.log(`📊 [API] Endpoint: GET /api/v1/orders/analytics/monthly-revenue`);
+  
+  const startTime = Date.now();
+  
+  return axiosOrder.get("/api/v1/orders/analytics/monthly-revenue", { params })
+    .then(response => {
+      const executionTime = Date.now() - startTime;
+      console.log(`📊 [API] ========== getMonthlyRevenueApi Response ==========`);
+      console.log(`📊 [API] ✅ Request successful (${executionTime}ms)`);
+      console.log(`📊 [API] Response status: ${response?.status || 'unknown'}`);
+      console.log(`📊 [API] Response data:`, response);
+      
+      if (response) {
+        console.log(`📊 [API] Year: ${response.year}`);
+        console.log(`📊 [API] Total Revenue: ${response.totalRevenue} VND`);
+        console.log(`📊 [API] Total Orders: ${response.totalOrders}`);
+        console.log(`📊 [API] Monthly data points: ${response.monthlyRevenues?.length || 0}`);
+        
+        if (response.monthlyRevenues && response.monthlyRevenues.length > 0) {
+          console.log(`📊 [API] Monthly breakdown:`);
+          response.monthlyRevenues.forEach(month => {
+            console.log(`📊 [API]   - Month ${month.month}: Revenue=${month.totalRevenue} VND, Orders=${month.orderCount}`);
+          });
+        } else {
+          console.warn(`📊 [API] ⚠️ No monthly revenue data in response`);
+        }
+      }
+      
+      console.log(`📊 [API] ========== End Response ==========`);
+      return response;
+    })
+    .catch(error => {
+      const executionTime = Date.now() - startTime;
+      console.error(`📊 [API] ========== getMonthlyRevenueApi Error ==========`);
+      console.error(`📊 [API] ❌ Request failed (${executionTime}ms)`);
+      console.error(`📊 [API] Error:`, error);
+      console.error(`📊 [API] Error message: ${error.message}`);
+      console.error(`📊 [API] Error response:`, error.response);
+      console.error(`📊 [API] Error status: ${error.response?.status}`);
+      console.error(`📊 [API] Error data:`, error.response?.data);
+      console.error(`📊 [API] ========== End Error ==========`);
+      throw error;
+    });
+};
+
 export const fetchReviewsByProduct = (productId) => {
   console.log(`📥 [API] Fetching reviews for product ID: ${productId}`);
   console.log(`📍 [API] Endpoint: /api/v1/reviews/products/${productId}`);

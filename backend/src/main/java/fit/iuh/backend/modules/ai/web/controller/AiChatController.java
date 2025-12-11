@@ -2,7 +2,7 @@ package fit.iuh.backend.modules.ai.web.controller;
 
 import fit.iuh.backend.modules.ai.application.dto.AiChatRequest;
 import fit.iuh.backend.modules.ai.application.dto.AiChatResponse;
-import fit.iuh.backend.modules.ai.application.service.GeminiChatService;
+import fit.iuh.backend.modules.ai.application.service.AiChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,13 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class AiChatController {
 
-    private final GeminiChatService geminiChatService;
+    private final AiChatService aiChatService;
 
     @PostMapping("/chat")
     @Operation(summary = "Query the Watchify AI assistant")
     public ResponseEntity<AiChatResponse> chat(@Valid @RequestBody AiChatRequest request) {
         log.info("AI chat request received");
-        AiChatResponse response = geminiChatService.chat(request);
+        AiChatResponse response = aiChatService.chat(request);
         return ResponseEntity.ok(response);
     }
 }

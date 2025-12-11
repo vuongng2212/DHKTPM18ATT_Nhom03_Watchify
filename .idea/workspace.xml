@@ -5,8 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="99af935b-8b7f-4732-a208-d7b0174eb6b0" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/fit/iuh/backend/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/fit/iuh/backend/config/SecurityConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/fit/iuh/backend/modules/catalog/application/service/ProductService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/fit/iuh/backend/modules/catalog/application/service/ProductService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/backend/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/fit/iuh/backend/modules/ai/application/service/GeminiChatService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/fit/iuh/backend/modules/ai/config/GeminiProperties.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/main/java/fit/iuh/backend/modules/ai/web/controller/AiChatController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/fit/iuh/backend/modules/ai/web/controller/AiChatController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -70,7 +73,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "Spring Boot.BackendApplication.executor": "Run",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "tuanPhan/aichatbot",
     "last_opened_file_path": "/Users/tuanphan/Documents/www/DHKTPM18ATT_Nhom03_Watchify",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -81,6 +84,11 @@
     "project.structure.proportion": "0.0",
     "project.structure.side.proportion": "0.0",
     "vue.rearranger.settings.migration": "true"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "mariadb"
+    ]
   }
 }]]></component>
   <component name="RunManager">
@@ -109,7 +117,7 @@
       <option name="presentableId" value="Default" />
       <updated>1763223174761</updated>
       <workItem from="1763223175961" duration="5680000" />
-      <workItem from="1765206356772" duration="1031000" />
+      <workItem from="1765206356772" duration="4625000" />
     </task>
     <servers />
   </component>
